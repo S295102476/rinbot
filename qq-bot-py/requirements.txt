@@ -1,0 +1,6 @@
+nonebot2[fastapi]
+nonebot-adapter-onebot
+redis
+httpx
+pyyaml
+websockets

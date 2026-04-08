@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# 敏感配置（含 API Key、token 等，不上传）
+qq-bot-py/config.yaml
+qq-bot-py/.env
+gsuid_core_app/data/config.json
+gsuid_core_app/data/configs/
+
+# 游戏数据（体积大，不需要版本管理）
+gsuid_core_app/data/
+
+# Docker 构建产物
+gsuid_core_app/venv-data/
+
+# 日志
+logs/
+*.log
+
+# 缓存
+*.lock
+.DS_Store
+Thumbs.db
