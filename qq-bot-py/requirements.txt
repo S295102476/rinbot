@@ -4,3 +4,11 @@ redis
 httpx
 pyyaml
 websockets
+minio
+Pillow
+SQLAlchemy[asyncio]
+aiomysql
+cryptography
+PicImageSearch
+cloudscraper
+pyquery
