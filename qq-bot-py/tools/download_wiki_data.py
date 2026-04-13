@@ -54,7 +54,7 @@ def main():
     lines = []
 
     lines.append("-- 由 tools/download_wiki_data.py 自动生成")
-    lines.append("-- 导入方式: mysql -u qqbot -p***REDACTED*** qqbot < wiki_data.sql")
+    lines.append("-- 导入方式: mysql -u <用户名> -p<密码> <数据库名> < wiki_data.sql")
     lines.append("")
     lines.append("SET NAMES utf8mb4;")
     lines.append("")
@@ -213,7 +213,7 @@ def main():
     print("\n下一步——把文件传到服务器并导入：")
     print("  scp wiki_data.sql root@<服务器IP>:/opt/qq-bot-py/")
     print("  ssh root@<服务器IP>")
-    print("  mysql -u qqbot -p***REDACTED*** qqbot < /opt/qq-bot-py/wiki_data.sql")
+    print("  mysql -u <用户名> -p<密码> <数据库名> < /opt/qq-bot-py/wiki_data.sql")
 
 
 if __name__ == "__main__":

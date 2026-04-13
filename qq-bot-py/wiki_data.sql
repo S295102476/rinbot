@@ -1,5 +1,5 @@
 -- 由 tools/download_wiki_data.py 自动生成
--- 导入方式: mysql -u qqbot -p***REDACTED*** qqbot < wiki_data.sql
+-- 导入方式: mysql -u <用户名> -p<密码> <数据库名> < wiki_data.sql
 
 SET NAMES utf8mb4;
 
