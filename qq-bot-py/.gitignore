@@ -3,6 +3,7 @@ config.yaml
 config.yml
 *.env
 .env*
+.vscode/sftp.json
 
 # Python
 __pycache__/
