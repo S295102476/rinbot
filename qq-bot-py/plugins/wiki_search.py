@@ -33,7 +33,7 @@ from nonebot.params import CommandArg
 
 from plugins.db import (
     engine, Base, SessionFactory,
-    WikiCard, WikiRelic, WikiPotion, WikiModifier,
+    WikiCard, WikiRelic, WikiPotion, WikiModifier, WikiMonster,
 )
 
 # ━━━━━━━━━━━━━━━━ 配置 ━━━━━━━━━━━━━━━━
@@ -70,6 +70,7 @@ CATEGORY_KEYWORDS = {
     "遗物": "relic",
     "药水": "potion",
     "词条": "modifier", "修改器": "modifier",
+    "怪物": "monster", "敌人": "monster",
 }
 
 wiki_cmd = on_command("#尖塔", priority=5, block=True)
@@ -331,6 +332,18 @@ async def search_modifiers(keyword: str, limit: int = 10) -> list[WikiModifier]:
         return list((await session.execute(stmt)).scalars().all())
 
 
+async def search_monsters(keyword: str, limit: int = 10) -> list[WikiMonster]:
+    kw = _escape_like(keyword)
+    async with SessionFactory() as session:
+        stmt = (
+            select(WikiMonster)
+            .where(WikiMonster.name.like(f"%{kw}%"))
+            .order_by(WikiMonster.name != keyword)
+            .limit(limit)
+        )
+        return list((await session.execute(stmt)).scalars().all())
+
+
 async def find_card_by_id(card_id: str) -> WikiCard | None:
     async with SessionFactory() as session:
         stmt = select(WikiCard).where(WikiCard.card_id == card_id)
@@ -404,6 +417,30 @@ def format_modifier(mod: WikiModifier) -> str:
     return "\n".join(lines)
 
 
+def format_monster(monster: WikiMonster) -> str:
+    lines = [f"📖 {monster.name}"]
+    # HP
+    if monster.min_hp and monster.max_hp:
+        if monster.min_hp == monster.max_hp:
+            lines.append(f"HP: {monster.min_hp}")
+        else:
+            lines.append(f"HP: {monster.min_hp}~{monster.max_hp}")
+    # 勇者HP
+    if monster.ascender_min_hp and monster.ascender_max_hp:
+        if monster.ascender_min_hp == monster.ascender_max_hp:
+            lines.append(f"勇者HP: {monster.ascender_min_hp}")
+        else:
+            lines.append(f"勇者HP: {monster.ascender_min_hp}~{monster.ascender_max_hp}")
+    if monster.tier:
+        lines.append(f"等级: {monster.tier}")
+    if monster.stage:
+        lines.append(f"出现地区: {monster.stage}")
+    if monster.note and monster.note != "无":
+        lines.append(f"备注: {clean_wiki_text(monster.note)}")
+    lines.append("📚 来源: 灰机wiki sts2")
+    return "\n".join(lines)
+
+
 # ━━━━━━━━━━━━━━━━ 搜索流程 ━━━━━━━━━━━━━━━━
 
 async def do_card_search(keyword: str) -> tuple[str, list[str], str]:
@@ -472,6 +509,16 @@ async def do_modifier_search(keyword: str) -> tuple[str, list[str], str]:
     text = format_modifier(results[0])
     others = list(dict.fromkeys(m.name for m in results[1:5] if m.name != results[0].name))
     return text, others, ""
+
+
+async def do_monster_search(keyword: str) -> tuple[str, list[str], str]:
+    results = await search_monsters(keyword)
+    if not results:
+        return "", [], ""
+    text = format_monster(results[0])
+    others = list(dict.fromkeys(m.name for m in results[1:5] if m.name != results[0].name))
+    image_name = results[0].image or ""
+    return text, others, image_name
 
 
 async def _send_with_image(
@@ -545,6 +592,7 @@ async def search_and_reply(bot: Bot, event: GroupMessageEvent,
         "relic": ("遗物", do_relic_search),
         "potion": ("药水", do_potion_search),
         "modifier": ("词条", do_modifier_search),
+        "monster": ("怪物", do_monster_search),
     }
 
     if category and category in cat_map:
@@ -714,9 +762,10 @@ async def handle_wiki(bot: Bot, event: GroupMessageEvent, args: Message = Comman
     if not raw:
         await wiki_cmd.send(
             "用法: #尖塔 <分类> <名称>\n"
-            "分类: 卡牌/遗物/药水/词条\n"
+            "分类: 卡牌/遗物/药水/词条/怪物\n"
             "示例: #尖塔 卡牌 打击\n"
             "　　  #尖塔 遗物 燃烧之血\n"
+            "　　  #尖塔 怪物 史莱姆\n"
             "　　  #尖塔 储君\n"
             "　　  #尖塔 今日挑战\n"
             "管理: #尖塔 更新数据"

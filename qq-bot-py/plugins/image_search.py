@@ -26,6 +26,7 @@ MAX_RESULTS = img_cfg.get("max_results", 3)
 R18_FLAG = img_cfg.get("r18", 0)
 PROXY = img_cfg.get("proxy", "") or None  # None 表示不使用代理
 
+
 # AI Vision 配置 (兜底识图)
 ai_cfg = config.get("ai", {})
 vision_cfg = ai_cfg.get("vision", {})
@@ -59,11 +60,23 @@ async def handle_search_img(bot: Bot, event: GroupMessageEvent, args: Message = 
     ]
 
     if not image_urls and event.reply:
+        # 先从 reply 消息段直接取
         for seg in event.reply.message:
             if seg.type == "image":
                 url = seg.data.get("url") or seg.data.get("file", "")
                 if url:
                     image_urls.append(url)
+        # 取不到时（别人的消息 NapCat 可能不内联图片），用 get_msg 重新拉取
+        if not image_urls:
+            try:
+                msg_data = await bot.get_msg(message_id=event.reply.message_id)
+                for seg in Message(msg_data.get("message", [])):
+                    if seg.type == "image":
+                        url = seg.data.get("url") or seg.data.get("file", "")
+                        if url:
+                            image_urls.append(url)
+            except Exception as e:
+                logger.warning(f"[image_search] get_msg 失败: {e}")
 
     keyword = args.extract_plain_text().strip()
 
@@ -251,7 +264,7 @@ async def _search_saucenao(img_bytes: bytes) -> list[dict]:
         return []
 
 
-# ────────── ASCII2D 引擎（URL 搜索，纯 GET 请求，绕过 Cloudflare POST 拦截） ──────────
+# ────────── ASCII2D 引擎（URL 搜索，纯 GET 请求） ──────────
 
 
 def _sync_ascii2d_search(image_url: str, proxy: str | None) -> list[dict]:
@@ -271,7 +284,7 @@ def _sync_ascii2d_search(image_url: str, proxy: str | None) -> list[dict]:
     if home.status_code != 200:
         return []
 
-    # Step 1: URL 搜索 (纯 GET, 不需要 POST 上传文件)
+    # Step 1: URL 搜索
     search_url = f"https://ascii2d.net/search/url/{quote(image_url, safe='')}"
     resp = scraper.get(search_url, allow_redirects=True, timeout=30)
     color_url = resp.url
@@ -281,18 +294,16 @@ def _sync_ascii2d_search(image_url: str, proxy: str | None) -> list[dict]:
         logger.warning(f"[ascii2d] URL搜索失败, 状态: {resp.status_code}")
         return []
 
-    # Step 2: 尝试切换到 bovw 特征搜索, 失败则用色合结果
+    # Step 2: 尝试切换到 bovw 特征搜索，失败则用色合结果
     if "/search/color/" in color_url:
         bovw_url = color_url.replace("/search/color/", "/search/bovw/")
         resp2 = scraper.get(bovw_url, timeout=30)
         logger.info(f"[ascii2d] bovw状态: {resp2.status_code}")
         if resp2.status_code == 200:
             return _parse_ascii2d_html(resp2.text)
-        # bovw 失败, 用色合结果
         logger.info("[ascii2d] bovw 不可用, 使用色合搜索结果")
         return _parse_ascii2d_html(resp.text)
 
-    # 如果直接返回了结果页（没有 color 重定向），直接解析
     return _parse_ascii2d_html(resp.text)
 
 
@@ -342,7 +353,7 @@ def _parse_ascii2d_html(html: str) -> list[dict]:
                 "extra_urls": extra_urls,
             })
 
-        return found[:5]
+        return found[:2]
     except Exception as e:
         logger.warning(f"[ascii2d] HTML解析失败: {e}")
         return []

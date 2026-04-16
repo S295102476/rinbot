@@ -32,6 +32,7 @@ LOCAL_FILES = {
     "relic":    os.path.join(TOOLS_DIR, "relic.json"),
     "potion":   os.path.join(TOOLS_DIR, "potion.json"),
     "modifier": os.path.join(TOOLS_DIR, "modifier.json"),
+    "monster":  os.path.join(TOOLS_DIR, "monster.json"),
 }
 
 # tabx 各类别中 image 字段的位序
@@ -40,6 +41,7 @@ IMAGE_INDEX = {
     "relic": 10,
     "potion": 8,
     "modifier": 4,
+    "monster": 3,
 }
 
 # 角色选择图（每日挑战用）

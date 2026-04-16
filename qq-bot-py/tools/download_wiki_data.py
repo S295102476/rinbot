@@ -22,12 +22,13 @@ LOCAL_FILES = {
     "relic":    os.path.join(TOOLS_DIR, "relic.json"),
     "potion":   os.path.join(TOOLS_DIR, "potion.json"),
     "modifier": os.path.join(TOOLS_DIR, "modifier.json"),
+    "monster":  os.path.join(TOOLS_DIR, "monster.json"),
 }
 
 def esc(v) -> str:
-    """转义字符串用于 SQL INSERT"""
+    """转义字符串用于 SQL INSERT，None 转为空字符串"""
     if v is None:
-        return "NULL"
+        return "''"
     s = str(v).replace("\\", "\\\\").replace("'", "\\'").replace("\r", "").replace("\n", "\\n")
     return f"'{s}'"
 
@@ -110,6 +111,22 @@ def main():
   description TEXT,
   image VARCHAR(256),
   kind VARCHAR(32)
+) CHARACTER SET utf8mb4;""")
+    lines.append("")
+    lines.append("""CREATE TABLE IF NOT EXISTS wiki_monsters (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  monster_id VARCHAR(120),
+  name VARCHAR(100),
+  image VARCHAR(200),
+  min_hp VARCHAR(20),
+  max_hp VARCHAR(20),
+  ascender_min_hp VARCHAR(20),
+  ascender_max_hp VARCHAR(20),
+  tier VARCHAR(50),
+  power VARCHAR(50),
+  stage VARCHAR(100),
+  note TEXT,
+  page VARCHAR(200)
 ) CHARACTER SET utf8mb4;""")
     lines.append("")
 
@@ -202,6 +219,32 @@ def main():
             lines.append(
                 f"INSERT INTO wiki_modifiers "
                 f"(modifier_id,name,description,image,kind) "
+                f"VALUES ({vals});"
+            )
+        lines.append("")
+
+    # ── Monster ────────────────────────────────────────────────
+    rows = load_tabx("monster", LOCAL_FILES["monster"])
+    if rows:
+        lines.append("DELETE FROM wiki_monsters;")
+        for r in rows:
+            vals = ", ".join([
+                esc(r[1]),   # monster_id
+                esc(r[2]),   # name
+                esc(r[3]),   # image
+                esc(r[4]),   # min_hp
+                esc(r[5]),   # max_hp
+                esc(r[6]),   # ascender_min_hp
+                esc(r[7]),   # ascender_max_hp
+                esc(r[8]),   # tier
+                esc(r[9]),   # power
+                esc(r[10]),  # stage
+                esc(r[11]),  # note
+                esc(r[12]),  # page
+            ])
+            lines.append(
+                f"INSERT INTO wiki_monsters "
+                f"(monster_id,name,image,min_hp,max_hp,ascender_min_hp,ascender_max_hp,tier,power,stage,note,page) "
                 f"VALUES ({vals});"
             )
         lines.append("")

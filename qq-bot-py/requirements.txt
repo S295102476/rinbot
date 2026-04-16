@@ -12,3 +12,5 @@ cryptography
 PicImageSearch
 cloudscraper
 pyquery
+pixivpy3
+nonebot-plugin-apscheduler

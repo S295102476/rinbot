@@ -160,18 +160,29 @@ def _not_self_rule() -> Rule:
 meme_handler = on_message(rule=_not_self_rule(), priority=11, block=False)
 
 
+def _is_meme(seg) -> bool:
+    """判断图片 segment 是否为表情包（双重检查 sub_type 和 summary）"""
+    sub_type = seg.data.get("sub_type")
+    summary = seg.data.get("summary", "")
+    # sub_type=1 表示表情包/贴纸；summary 含"动画表情"也是表情包
+    return str(sub_type) == "1" or "动画表情" in summary
+
+
 @meme_handler.handle()
 async def handle_meme(bot: Bot, event: GroupMessageEvent):
     # 提取所有图片 segment
     image_segs = [seg for seg in event.message if seg.type == "image"]
     has_image = len(image_segs) > 0
 
+    # 收集只针对表情包（sub_type=1 或 summary 含"动画表情"）
+    meme_segs = [seg for seg in image_segs if _is_meme(seg)]
+
     # ── 收集逻辑 ──
-    if has_image:
+    if meme_segs:
         roll = random.random()
         logger.debug(f"[meme] 收集骰子: {roll:.2f}, 阈值: {COLLECT_RATE}")
         if roll < COLLECT_RATE:
-            for seg in image_segs:
+            for seg in meme_segs:
                 url = seg.data.get("url") or seg.data.get("file", "")
                 logger.debug(f"[meme] 图片URL: {url[:80]}...")
                 if not url:

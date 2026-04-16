@@ -30,6 +30,11 @@ GROUP_CONTEXT_LIMIT = 50  # 自动回复取群聊最近50条
 _last_reply_time: dict[int, float] = {}
 
 
+def _build_group_system_prompt() -> str:
+    """Use the configured persona without personal relationship overrides."""
+    return ai_cfg["system_prompt"]
+
+
 def is_group_enabled(group_id: int) -> bool:
     return group_id in gc_cfg.get("enabled_groups", [])
 
@@ -179,8 +184,9 @@ async def passive_reply(group_id: int) -> str | None:
         return None
 
     system_content = (
-        ai_cfg["system_prompt"]
-        + "\n\n【群聊模式】以下是群聊中大家的对话记录，你可以自然地参与讨论，保持简短自然。"
+        _build_group_system_prompt()
+        + "\n\n【群聊模式】以下是群聊中大家的对话记录，请关注最近最活跃的话题和说话最多的人，"
+          "以群里的整体氛围自然插话，不要偏向任何特定用户，保持简短自然。"
     )
     messages = [
         {"role": "system", "content": system_content},
@@ -225,8 +231,9 @@ async def vision_comment(group_id: int, image_urls: list[str], user_text: str) -
     content.append({"type": "text", "text": "\n".join(prompt_parts)})
 
     system_prompt = (
-        ai_cfg["system_prompt"]
-        + "\n\n[群聊模式]你看到群里有人发了一张图，结合群内讨论的话题自然地发表评论，严格控制在30字以内，最多两句话。"
+        _build_group_system_prompt()
+        + "\n\n[群聊模式]你看到群里有人发了一张图，结合群内讨论的话题自然地发表评论，"
+          "关注群里整体氛围，不要偏向任何特定用户，严格控制在30字以内，最多两句话。"
     )
     messages = [
         {"role": "system", "content": system_prompt},
