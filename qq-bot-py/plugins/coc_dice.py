@@ -293,11 +293,18 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
             arg = suffix + (" " + arg if arg else "")
             cmd = ".coc"
 
+    # .rd 后面可能直接跟面数（如 .rd6 .rd100），提取为骰子面数
+    if cmd.startswith(".rd") and cmd != ".rd":
+        suffix = cmd[3:]
+        if re.match(r"^\d+$", suffix):
+            arg = "d" + suffix + (" " + arg if arg else "")
+            cmd = ".rd"
+
     # 路由
     if cmd in (".r", ".roll"):
         await _cmd_roll(event, arg)
     elif cmd == ".rd":
-        await _cmd_roll(event, "d100")
+        await _cmd_roll(event, arg if arg else "d100")
     elif cmd == ".ra":
         await _cmd_ra(event, arg, user_id, group_id)
     elif cmd == ".rh":

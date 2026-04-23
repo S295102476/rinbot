@@ -109,8 +109,10 @@ async def handle_group_msg(bot: Bot, event: GroupMessageEvent):
         if seg.type == "image" and (seg.data.get("url") or seg.data.get("file", ""))
     ]
 
-    # 群内图片概率识图回复
-    vision_rate = gc_cfg.get("vision_image_rate", 0.0)
+    # 群内图片概率识图回复（支持按群覆盖，优先读 group_overrides[group_id]）
+    group_overrides = gc_cfg.get("group_overrides", {}) or {}
+    group_cfg = group_overrides.get(group_id) or group_overrides.get(str(group_id)) or {}
+    vision_rate = group_cfg.get("vision_image_rate", gc_cfg.get("vision_image_rate", 0.0))
     if image_urls and vision_rate > 0 and not _is_cooling(group_id) and random.random() < vision_rate:
         reply = await vision_comment(group_id, image_urls, plain)
         if reply:

@@ -144,7 +144,7 @@ async def _handle_file_request(bot: Bot, event: GroupMessageEvent, message: str,
             )
             file_content = resp.json()["choices"][0]["message"]["content"].strip()
     except Exception as e:
-        await bot.send_group_msg(group_id=group_id, message=f"文件生成失败：{e}")
+        logger.error(f"[search] 文件生成失败: {e}")
         return
 
     # 剥离 markdown 代码块

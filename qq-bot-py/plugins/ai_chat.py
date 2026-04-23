@@ -6,6 +6,8 @@
 
 import asyncio
 import re
+import random
+import pathlib
 
 import httpx
 import yaml
@@ -17,6 +19,7 @@ from nonebot.log import logger
 from sqlalchemy import select, func, delete
 
 from .db import Base, engine, get_session, ChatHistory, UserMemory, GroupMessage
+from .meme_collector import get_reply_meme_url
 
 # ---------- 配置 ----------
 with open("config.yaml", "r", encoding="utf-8") as f:
@@ -29,6 +32,52 @@ MODEL = ai_cfg["model"]
 MAX_HISTORY = ai_cfg.get("max_history", 100)  # 用户对话保留100条
 USER_CONTEXT_LIMIT = 50   # @回复时取用户最近50条
 GROUP_CONTEXT_LIMIT = 50  # @回复时取群聊最近50条
+
+
+# ---------- 人设知识库加载 ----------
+def _load_persona() -> str:
+    """
+    加载 persona/ 目录下所有 .md 文件，按文件名排序后合并。
+    character.md（设定）排在 prompt.md（规则）之前（字母序 c < p）。
+    """
+    persona_dir = ai_cfg.get("persona_dir", "persona")
+    base = pathlib.Path(persona_dir)
+    if not base.is_dir():
+        logger.warning(f"[ai_chat] persona 目录不存在: {persona_dir}，人设知识库未加载")
+        return ""
+    parts = []
+    files = sorted(base.glob("*.md"))
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8").strip()
+            if text:
+                parts.append(text)
+        except Exception as e:
+            logger.warning(f"[ai_chat] 读取人设文件失败 {f.name}: {e}")
+    if parts:
+        total_chars = sum(len(p) for p in parts)
+        logger.info(f"[ai_chat] 已加载人设文档 {len(parts)} 个（{', '.join(f.name for f in files)}），共 {total_chars} 字")
+        return "\n\n---\n\n".join(parts)
+    return ""
+
+
+PERSONA_CONTENT: str = _load_persona()
+
+
+# ---------- 错误日志 ----------
+_log_dir = pathlib.Path("logs")
+_log_dir.mkdir(exist_ok=True)
+_err_log_path = _log_dir / "ai_errors.log"
+
+def _log_err(tag: str, detail: str):
+    """将错误明细写入 logs/ai_errors.log，不向用户暴露任何技术信息。"""
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(_err_log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] [{tag}] {detail}\n")
+    except Exception:
+        pass
+    logger.debug(f"[{tag}] {detail}")
 
 
 # ---------- 建表 ----------
@@ -57,7 +106,6 @@ ai_chat = on_message(rule=_at_bot_rule(), priority=5, block=True)
 async def handle_chat(bot: Bot, event: GroupMessageEvent):
     user_id = event.user_id
     group_id = event.group_id
-    message = event.get_plaintext().strip()
 
     # 获取用户昵称
     try:
@@ -65,6 +113,25 @@ async def handle_chat(bot: Bot, event: GroupMessageEvent):
         nickname = member.get("card") or member.get("nickname") or str(user_id)
     except Exception:
         nickname = str(user_id)
+
+    # 构建消息文本，将 @某人 解析为真实昵称，避免 AI 收到空白或无法识别的 QQ 号
+    message_parts = []
+    for seg in event.message:
+        if seg.type == "text":
+            text = seg.data.get("text", "").strip()
+            if text:
+                message_parts.append(text)
+        elif seg.type == "at":
+            at_qq = str(seg.data.get("qq", ""))
+            if at_qq == str(bot.self_id):
+                continue  # 跳过 @机器人 本身
+            try:
+                at_member = await bot.get_group_member_info(group_id=group_id, user_id=int(at_qq))
+                at_name = at_member.get("card") or at_member.get("nickname") or at_qq
+            except Exception:
+                at_name = at_qq
+            message_parts.append(f"@{at_name}")
+    message = " ".join(message_parts).strip()
 
     # 提取图片URL
     image_urls = [
@@ -91,7 +158,21 @@ async def handle_chat(bot: Bot, event: GroupMessageEvent):
     else:
         reply = await chat(user_id, nickname, message, context_group_id)
 
+    if not reply:
+        return
+
     await ai_chat.send(Message(MessageSegment.reply(event.message_id)) + reply)
+
+    # 概率附带情绪表情包（独立消息，稍后发出）
+    reply_meme_rate = ai_cfg.get("group_chat", {}).get("reply_meme_rate", 0.0)
+    if reply and reply_meme_rate > 0 and random.random() < reply_meme_rate:
+        try:
+            meme_url = await get_reply_meme_url(reply)
+            if meme_url:
+                await asyncio.sleep(0.4)
+                await bot.send_group_msg(group_id=group_id, message=MessageSegment.image(meme_url))
+        except Exception as e:
+            logger.debug(f"[ai_chat] 发送表情包失败（忽略）: {e}")
 
 
 # ---------- 文字对话 (MySQL 存储) ----------
@@ -121,6 +202,10 @@ async def chat(user_id: int, nickname: str, user_message: str, group_id: int = N
 
     messages = [{"role": "system", "content": prompt}]
 
+    # 注入人设知识库（设定 + 规则）
+    if PERSONA_CONTENT:
+        messages.append({"role": "system", "content": PERSONA_CONTENT})
+
     # 3. 注入群聊上下文 (最近50条)
     if group_id is not None:
         group_context = await _get_group_context(group_id, GROUP_CONTEXT_LIMIT)
@@ -143,12 +228,12 @@ async def chat(user_id: int, nickname: str, user_message: str, group_id: int = N
             )
             data = resp.json()
             if "error" in data:
-                logger.error(f"[ai_chat] API error: {data['error']}")
-                return f"出错了……（{data['error'].get('message', '未知')}）"
+                _log_err("ai_chat/chat", f"API error: {data['error']}")
+                return None
             reply = data["choices"][0]["message"]["content"].strip()
     except Exception as e:
-        logger.error(f"[ai_chat] API 调用异常: {e}")
-        return f"通信出了问题……（{e}）"
+        _log_err("ai_chat/chat", f"API 调用异常: {e}")
+        return None
 
     reply = re.sub(r"<think>.*?</think>", "", reply, flags=re.DOTALL).strip()
 
@@ -232,8 +317,11 @@ async def chat_with_vision(user_id: int, nickname: str, user_message: str, image
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": content},
     ]
+    # 注入人设知识库（设定 + 规则）
+    if PERSONA_CONTENT:
+        messages.append({"role": "system", "content": PERSONA_CONTENT})
+    messages.append({"role": "user", "content": content})
 
     try:
         async with httpx.AsyncClient(timeout=120) as client:
@@ -244,14 +332,14 @@ async def chat_with_vision(user_id: int, nickname: str, user_message: str, image
             )
             resp_json = resp.json()
             if "error" in resp_json:
-                logger.error(f"[ai_chat] Qwen-VL API 报错: {resp_json['error']}")
-                return f"图片识别失败了……（{resp_json['error'].get('message', '未知错误')}）"
+                _log_err("ai_chat/vision", f"API 报错: {resp_json['error']}")
+                return None
             reply = resp_json["choices"][0]["message"]["content"].strip()
         reply = re.sub(r"<think>.*?</think>", "", reply, flags=re.DOTALL).strip()
         return reply
     except Exception as e:
-        logger.error(f"[ai_chat] Qwen-VL 调用异常: {e}")
-        return f"图片识别失败了……（{e}）"
+        _log_err("ai_chat/vision", f"调用异常: {e}")
+        return None
 
 
 # ---------- 记忆提取 ----------
@@ -270,7 +358,10 @@ async def _extract_memory(user_id: int, user_message: str):
                 headers={"Authorization": f"Bearer {API_KEY}"},
                 json={"model": MODEL, "messages": [{"role": "user", "content": prompt}]},
             )
-            summary = resp.json()["choices"][0]["message"]["content"].strip()
+            resp_data = resp.json()
+            if "error" in resp_data or "choices" not in resp_data:
+                return
+            summary = resp_data["choices"][0]["message"]["content"].strip()
             summary = re.sub(r"<think>.*?</think>", "", summary, flags=re.DOTALL).strip()
 
         session = await get_session()

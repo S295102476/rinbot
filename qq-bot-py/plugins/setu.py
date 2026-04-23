@@ -406,6 +406,19 @@ async def _pick_from_tag_search(tags: list[str], used_pids: set[int], count: int
         selected.append(item)
         used_pids.add(item["pid"])
 
+    # 补足：若去重后仍不足 count，忽略"已发过"限制，从 pool 剩余项里直接补
+    if len(selected) < count:
+        selected_pids = {item["pid"] for item in selected}
+        for item in pool:
+            if len(selected) >= count:
+                break
+            if item["pid"] in selected_pids:
+                continue
+            logger.info(f"[setu] 补足第 {len(selected)+1} 张 (pid={item['pid']}, 忽略去重)")
+            selected.append(item)
+            used_pids.add(item["pid"])
+            selected_pids.add(item["pid"])
+
     return selected
 
 
@@ -605,7 +618,7 @@ async def handle_setu(bot: Bot, event: GroupMessageEvent, args: Message = Comman
             if round_idx == 0:
                 await setu_cmd.send(
                     "没有找到合适的图片……" if not tags
-                    else f"没有找到标签「{'·'.join(tags)}」的高质量作品……"
+                    else f"没有找到标签「{' '.join(tags)}」的高质量作品……"
                 )
                 return
             break
@@ -650,6 +663,8 @@ RANKING_AUTO_GROUPS: list[int] = ranking_cfg.get("auto_groups", [])
 RANKING_HOUR = ranking_cfg.get("schedule_hour", 12)
 RANKING_MINUTE = ranking_cfg.get("schedule_minute", 0)
 RANKING_BUCKET = ranking_cfg.get("minio_bucket", "ranking")
+# 中转群：合并转发失败时先逐条发到此群拿 message_id，再用 ID 组合转发
+RANKING_RELAY_GROUP: int | None = ranking_cfg.get("relay_group") or None
 
 # 命令 → (pixiv mode, 中文名)
 _RANKING_MODES: dict[str, tuple[str, str]] = {
@@ -919,10 +934,32 @@ async def _get_or_build_ranking(
 async def _send_ranking(
     bot: Bot, group_id: int, records: list[RankingCache], title_text: str,
 ):
-    """发送排行榜到单个群。优先用 minio_url，否则降级 base64。"""
+    """
+    发送排行榜到单个群。
+    一律使用 base64 发送图片（QQ 服务器无法访问 MinIO URL）。
+    缓存命中时先从 MinIO 下载到内存再转 base64。
+    """
     if not records:
         return
 
+    # 预加载：确保所有 row 都有 _img_data
+    rows_need_dl = [
+        r for r in records
+        if (not hasattr(r, "_img_data") or not r._img_data) and r.minio_url  # type: ignore[attr-defined]
+    ]
+    if rows_need_dl:
+        logger.info(f"[ranking] 从 MinIO 预加载 {len(rows_need_dl)} 张图片…")
+        async def _dl_minio(client: httpx.AsyncClient, row: RankingCache):
+            try:
+                resp = await client.get(row.minio_url)
+                if resp.status_code == 200 and len(resp.content) > 1000:
+                    row._img_data = resp.content  # type: ignore[attr-defined]
+            except Exception as e:
+                logger.warning(f"[ranking] MinIO 下载失败 PID={row.pid}: {e}")
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            await asyncio.gather(*[_dl_minio(client, r) for r in rows_need_dl])
+
+    # 构建 nodes（一律 base64）
     nodes = []
     nodes.append({
         "type": "node",
@@ -937,75 +974,105 @@ async def _send_ranking(
             f"PID: {row.pid}\n"
             f"浏览量: {row.total_view:,}  收藏量: {row.total_bookmarks:,}"
         )
-        if row.minio_url:
-            img_seg = MessageSegment.image(row.minio_url)
-        elif hasattr(row, "_img_data") and row._img_data:  # type: ignore[attr-defined]
+        if hasattr(row, "_img_data") and row._img_data:  # type: ignore[attr-defined]
             b64 = base64.b64encode(row._img_data).decode()  # type: ignore[attr-defined]
             img_seg = MessageSegment.image(f"base64://{b64}")
+            nodes.append({
+                "type": "node",
+                "data": {"name": "rin", "uin": str(bot.self_id),
+                         "content": [MessageSegment.text(text), img_seg]},
+            })
         else:
             nodes.append({
                 "type": "node",
                 "data": {"name": "rin", "uin": str(bot.self_id),
                          "content": [MessageSegment.text(text)]},
             })
-            continue
 
-        nodes.append({
-            "type": "node",
-            "data": {"name": "rin", "uin": str(bot.self_id),
-                     "content": [MessageSegment.text(text), img_seg]},
-        })
-
-    try:
-        for attempt in range(3):
-            try:
-                await bot.call_api(
-                    "send_group_forward_msg", group_id=group_id, messages=nodes, _timeout=180,
-                )
-                logger.info(f"[ranking] 群 {group_id}: 发送成功 (attempt={attempt + 1})")
-                return
-            except Exception as e:
-                logger.warning(f"[ranking] 群 {group_id}: 合并转发失败 attempt={attempt + 1}/3: {e}")
-                if attempt < 2:
-                    await asyncio.sleep(3)
-
-        # 3 次全败：去掉所有图片节点，只发文字合并转发
-        logger.warning(f"[ranking] 群 {group_id}: 3 次重试均失败，降级纯文字合并转发")
-        text_nodes = [
-            n for n in nodes
-            if not any(
-                seg.get("type") == "image"
-                for seg in (
-                    n["data"]["content"]
-                    if isinstance(n["data"]["content"], list)
-                    else []
-                )
+    # 发送：重试 3 次合并转发
+    for attempt in range(3):
+        try:
+            await bot.call_api(
+                "send_group_forward_msg", group_id=group_id, messages=nodes, _timeout=180,
             )
-        ]
-        # 把带图片的节点改为只保留文字部分
-        text_only_nodes = []
-        for n in nodes:
-            content = n["data"].get("content", [])
-            text_parts = [seg for seg in content if isinstance(seg, MessageSegment) and seg.type == "text"]
-            if text_parts:
-                text_only_nodes.append({
-                    "type": "node",
-                    "data": {
-                        "name": n["data"]["name"],
-                        "uin": n["data"]["uin"],
-                        "content": text_parts,
-                    },
-                })
-        if text_only_nodes:
+            logger.info(f"[ranking] 群 {group_id}: 发送成功 (attempt={attempt + 1})")
+            return
+        except Exception as e:
+            logger.warning(f"[ranking] 群 {group_id}: 合并转发失败 attempt={attempt + 1}/3: {e}")
+            if attempt < 2:
+                await asyncio.sleep(3)
+
+    # 3 次全败：中转转发法
+    # 先把每条消息逐条发到中转目标（拿到 message_id），再用 ID 节点组合成合并转发
+    logger.warning(f"[ranking] 群 {group_id}: 3 次重试均失败，尝试中转转发法")
+    relay_msg_ids: list[int] = []
+    relay_ok = False
+
+    if RANKING_RELAY_GROUP or ADMIN_USERS:
+        relay_group = RANKING_RELAY_GROUP
+        relay_uid = next(iter(ADMIN_USERS), None) if not relay_group else None
+
+        for row in records:
+            try:
+                text = (
+                    f"#{row.rank_pos} {row.title}\n"
+                    f"作者: {row.author}\n"
+                    f"PID: {row.pid}\n"
+                    f"浏览量: {row.total_view:,}  收藏量: {row.total_bookmarks:,}"
+                )
+                if hasattr(row, "_img_data") and row._img_data:  # type: ignore[attr-defined]
+                    b64 = base64.b64encode(row._img_data).decode()  # type: ignore[attr-defined]
+                    relay_msg = MessageSegment.text(text + "\n") + MessageSegment.image(f"base64://{b64}")
+                else:
+                    relay_msg = MessageSegment.text(text)
+
+                if relay_group:
+                    resp = await bot.call_api("send_group_msg", group_id=relay_group, message=relay_msg)
+                else:
+                    resp = await bot.call_api("send_private_msg", user_id=relay_uid, message=relay_msg)
+
+                mid = resp.get("message_id") if isinstance(resp, dict) else None
+                if mid:
+                    relay_msg_ids.append(mid)
+                await asyncio.sleep(0.8)
+            except Exception as relay_err:
+                logger.warning(f"[ranking] 中转发送失败 PID={row.pid}: {relay_err}")
+
+        if relay_msg_ids:
+            id_nodes = [{"type": "node", "data": {"id": str(mid)}} for mid in relay_msg_ids]
             try:
                 await bot.call_api(
-                    "send_group_forward_msg", group_id=group_id, messages=text_only_nodes, _timeout=60,
+                    "send_group_forward_msg", group_id=group_id, messages=id_nodes, _timeout=60,
                 )
-                logger.info(f"[ranking] 群 {group_id}: 纯文字合并转发成功")
+                logger.info(f"[ranking] 群 {group_id}: 中转转发成功 ({len(relay_msg_ids)} 条)")
+                relay_ok = True
+            except Exception as fwd_err:
+                logger.warning(f"[ranking] 群 {group_id}: 中转转发失败: {fwd_err}")
+
+    # 最终兜底：逐条直发到目标群
+    if not relay_ok:
+        logger.warning(f"[ranking] 群 {group_id}: 中转转发失败，降级逐条直发")
+        try:
+            await bot.send_group_msg(group_id=group_id, message=title_text)
+        except Exception:
+            pass
+        for row in records:
+            try:
+                text = (
+                    f"#{row.rank_pos} {row.title}\n"
+                    f"作者: {row.author}\n"
+                    f"PID: {row.pid}\n"
+                    f"浏览量: {row.total_view:,}  收藏量: {row.total_bookmarks:,}"
+                )
+                if hasattr(row, "_img_data") and row._img_data:  # type: ignore[attr-defined]
+                    b64 = base64.b64encode(row._img_data).decode()  # type: ignore[attr-defined]
+                    msg = MessageSegment.text(text + "\n") + MessageSegment.image(f"base64://{b64}")
+                else:
+                    msg = MessageSegment.text(text)
+                await bot.send_group_msg(group_id=group_id, message=msg)
+                await asyncio.sleep(2)
             except Exception as e2:
-                logger.error(f"[ranking] 群 {group_id}: 纯文字合并转发也失败: {e2}")
-    except Exception as e:
-        logger.error(f"[ranking] 群 {group_id}: 发送异常: {e}")
+                logger.warning(f"[ranking] 逐条发送失败 PID={row.pid}: {e2}")
 
 
 # ---------- 构建标题文本 ----------
