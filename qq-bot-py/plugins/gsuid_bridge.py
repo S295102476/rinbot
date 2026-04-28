@@ -32,7 +32,7 @@ RESPONSE_TIMEOUT = 30   # 等待 gsuid_core 首次响应的超时（秒）
 DRAIN_TIMEOUT = 2       # 收到首条响应后，继续等待后续消息的超时（秒）
 
 # 游戏插件的触发前缀（小写匹配，含中文前缀）
-GAME_PREFIXES = ("ww", "end", "zmd", "ark", "mrfz", "zzz", "绝区零", "lol", "sr")
+GAME_PREFIXES = ("ww", "end", "zmd", "ark", "mrfz", "zzz", "绝区零", "lol", "sr", "nte", "ss")
 
 # gsuid_core 核心指令（无游戏前缀，需要完整匹配或前缀匹配，全部转发给 gsuid_core）
 # 包含绑定 Cookie / 扫码登录等账号管理指令
@@ -221,6 +221,7 @@ _ERROR_KEYWORDS = (
     "渲染失败", "执行失败", "Playwright", "BrowserType",
     "doesn't exist", "playwright install", "HTML渲染",
     "Traceback", "Exception",
+    "请求错误", "错误码",
 )
 
 

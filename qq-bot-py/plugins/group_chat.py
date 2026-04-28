@@ -10,13 +10,34 @@ import random
 import httpx
 import yaml
 import redis as redis_lib
-from nonebot import on_message
+from nonebot import on_message, get_driver
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
 from nonebot.rule import Rule
 from nonebot.log import logger
-from sqlalchemy import select, func, delete
+from sqlalchemy import text, select, func, delete
 
-from .db import get_session, GroupMessage
+from .db import engine, get_session, GroupMessage
+
+
+# ---------- 开기迁移：自动对已有表补列 ----------
+@get_driver().on_startup  # type: ignore[attr-defined]
+async def _migrate_group_messages():
+    """ALTER TABLE 补加 image_url / is_bot 列，列已存在时跳过。"""
+    sqls = [
+        "ALTER TABLE group_messages ADD COLUMN image_url TEXT NULL",
+        "ALTER TABLE group_messages ADD COLUMN is_bot TINYINT(1) NOT NULL DEFAULT 0",
+    ]
+    async with engine.begin() as conn:
+        for sql in sqls:
+            try:
+                await conn.execute(text(sql))
+                logger.info(f"[group_chat] 迁移成功: {sql[:60]}")
+            except Exception as e:
+                err_str = str(e)
+                if "Duplicate column" in err_str or "already exists" in err_str:
+                    pass  # 列已存在，正常跳过
+                else:
+                    logger.error(f"[group_chat] 迁移执行失败: {e}")
 
 with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
@@ -65,6 +86,13 @@ async def handle_group_msg(bot: Bot, event: GroupMessageEvent):
         nickname = str(user_id)
 
     has_image = any(seg.type == "image" for seg in event.message)
+    # 提取第一张图的 URL，存入 DB 供 AI 上下文使用
+    first_image_url = next(
+        (seg.data.get("url") or seg.data.get("file", "")
+         for seg in event.message
+         if seg.type == "image" and (seg.data.get("url") or seg.data.get("file", ""))),
+        "",
+    )
 
     # 存入 MySQL（非指令消息）
     if (plain or has_image) and not plain.startswith("#"):
@@ -77,6 +105,7 @@ async def handle_group_msg(bot: Bot, event: GroupMessageEvent):
                     nickname=nickname,
                     content=plain,
                     has_image=has_image,
+                    image_url=first_image_url,
                 ))
                 await session.commit()
                 # 5% 概率清理旧记录，每群保留最新500条
@@ -131,6 +160,27 @@ async def handle_group_msg(bot: Bot, event: GroupMessageEvent):
     reply = await passive_reply(group_id)
     if reply:
         await group_listener.send(reply)
+
+
+async def record_bot_reply(group_id: int, content: str) -> None:
+    """将 bot 自己的回复写入群消息历史，供 AI 上下文感知自己说过的话。"""
+    try:
+        session = await get_session()
+        try:
+            session.add(GroupMessage(
+                group_id=group_id,
+                user_id=0,
+                nickname="凛",
+                content=content,
+                has_image=False,
+                image_url="",
+                is_bot=True,
+            ))
+            await session.commit()
+        finally:
+            await session.close()
+    except Exception as e:
+        logger.debug(f"[group_chat] record_bot_reply 失败: {e}")
 
 
 def should_trigger(group_id: int, message: str) -> bool:

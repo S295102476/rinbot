@@ -1,8 +1,9 @@
-"""图片生成插件 — #图片生成 <描述>
+"""图片生成插件 — #图片生成 <描述> / #图片编辑 <描述>（附图或回复图）
 
-使用 chatgpt2api 代理，调用 gpt-image-1 生成图片。
+使用 chatgpt2api 代理，调用 gpt-image-2 生成/编辑图片。
 """
 import base64
+import io
 import time
 
 import httpx
@@ -104,4 +105,109 @@ async def handle_image_gen(bot: Bot, event: GroupMessageEvent, args: Message = C
         logger.error(
             f"[image_gen] 生成异常 {type(e).__name__} | "
             f"group={group_id} 耗时={elapsed:.1f}s prompt={prompt[:50]!r} | {e}"
+        )
+
+
+# ──────────────────────────────────────────
+# #图片编辑 指令
+# ──────────────────────────────────────────
+
+image_edit_cmd = on_command("#图片编辑", priority=5, block=True)
+
+
+def _extract_image_url(message: Message) -> str | None:
+    """从消息段中提取第一张图片的 URL"""
+    for seg in message:
+        if seg.type == "image":
+            return seg.data.get("url") or seg.data.get("file")
+    return None
+
+
+@image_edit_cmd.handle()
+async def handle_image_edit(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+    group_id = event.group_id
+
+    if ALLOWED_GROUPS and group_id not in ALLOWED_GROUPS:
+        return
+
+    prompt = args.extract_plain_text().strip()
+
+    # 从当前消息或被回复消息中找图片 URL
+    img_url = _extract_image_url(event.message)
+    if not img_url and event.reply:
+        img_url = _extract_image_url(event.reply.message)
+
+    if not img_url:
+        await bot.send(event, "请附带一张图片，或回复一张图片后再使用此指令")
+        return
+
+    if not prompt:
+        await bot.send(event, "请提供编辑描述，例：#图片编辑 换成赛博朋克风格")
+        return
+
+    # 冷却检查（和生成共用同一个冷却表）
+    now = time.time()
+    if group_id in _cooldown and now - _cooldown[group_id] < COOLDOWN:
+        return
+
+    _cooldown[group_id] = now
+    await bot.send(event, "正在处理图片，请稍候…")
+
+    t_start = time.time()
+    logger.info(
+        f"[image_edit] 开始编辑 | group={group_id} model={MODEL} size={SIZE} "
+        f"prompt={prompt[:50]!r} img_url={img_url[:80]}"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            # 下载原图
+            img_resp = await client.get(img_url)
+            img_resp.raise_for_status()
+            img_bytes = img_resp.content
+
+            full_prompt = f"{prompt}{STYLE_SUFFIX}" if STYLE_SUFFIX else prompt
+
+            # 发送 multipart/form-data 到 /v1/images/edits
+            resp = await client.post(
+                f"{API_URL}/images/edits",
+                headers={"Authorization": f"Bearer {API_KEY}"},
+                data={
+                    "model": MODEL,
+                    "prompt": full_prompt,
+                    "n": "1",
+                    "size": SIZE,
+                    "response_format": "b64_json",
+                },
+                files={"image": ("image.png", io.BytesIO(img_bytes), "image/png")},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        b64 = data["data"][0]["b64_json"]
+        result_bytes = base64.b64decode(b64)
+        elapsed = time.time() - t_start
+        await bot.send(event, MessageSegment.image(result_bytes))
+        logger.info(f"[image_edit] 编辑成功 | group={group_id} 耗时={elapsed:.1f}s prompt={prompt[:50]!r}")
+
+    except httpx.TimeoutException:
+        elapsed = time.time() - t_start
+        _cooldown.pop(group_id, None)
+        logger.warning(
+            f"[image_edit] 请求超时（>{TIMEOUT}s，已等待 {elapsed:.1f}s）| "
+            f"group={group_id} prompt={prompt[:50]!r} — 冷却已重置"
+        )
+    except httpx.HTTPStatusError as e:
+        elapsed = time.time() - t_start
+        _cooldown.pop(group_id, None)
+        logger.error(
+            f"[image_edit] HTTP {e.response.status_code} 错误 | "
+            f"group={group_id} 耗时={elapsed:.1f}s | 响应: {e.response.text[:200]}"
+        )
+    except Exception as e:
+        elapsed = time.time() - t_start
+        _cooldown.pop(group_id, None)
+        logger.error(
+            f"[image_edit] 异常 {type(e).__name__} | "
+            f"group={group_id} 耗时={elapsed:.1f}s | {e}"
         )

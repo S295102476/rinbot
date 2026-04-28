@@ -15,6 +15,7 @@ with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
 ai_cfg = config["ai"]
+_SEARCH_MODEL = ai_cfg.get("search", {}).get("model", ai_cfg["model"])
 minio_cfg = config["meme"]["minio"]
 rds = redis_lib.Redis(host=config["redis"]["host"], port=config["redis"]["port"], decode_responses=True)
 
@@ -90,7 +91,7 @@ async def search(user_id: int, user_message: str) -> str:
             resp = await client.post(
                 ai_cfg["api_url"],
                 headers={"Authorization": f"Bearer {ai_cfg['api_key']}"},
-                json={"model": ai_cfg["model"], "messages": messages}
+                json={"model": _SEARCH_MODEL, "messages": messages}
             )
             reply = resp.json()["choices"][0]["message"]["content"].strip()
 
@@ -135,7 +136,7 @@ async def _handle_file_request(bot: Bot, event: GroupMessageEvent, message: str,
                 ai_cfg["api_url"],
                 headers={"Authorization": f"Bearer {ai_cfg['api_key']}"},
                 json={
-                    "model": ai_cfg["model"],
+                    "model": _SEARCH_MODEL,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": message},

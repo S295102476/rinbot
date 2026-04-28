@@ -196,6 +196,7 @@ def _gen_coc_character() -> dict:
 
 def _format_attrs(attrs: dict) -> str:
     lines = []
+    # 主属性
     for a in _MAIN_ATTRS:
         if a in attrs:
             lines.append(f"{a}:{attrs[a]}")
@@ -203,13 +204,21 @@ def _format_attrs(attrs: dict) -> str:
         if a in attrs:
             lines.append(f"{a}:{attrs[a]}")
     total = sum(attrs.get(a, 0) for a in _MAIN_ATTRS + ["教育"])
-    lines.append(f"合计:{total}")
+    if any(a in attrs for a in _MAIN_ATTRS):
+        lines.append(f"合计:{total}")
+    # 派生属性
     derived = []
     for a in ["HP", "MP", "SAN", "DB"]:
         if a in attrs:
             derived.append(f"{a}:{attrs[a]}")
     if derived:
         lines.append(" ".join(derived))
+    # 自定义技能（非预定义项）
+    _shown = set(_MAIN_ATTRS) | {"教育", "幸运", "HP", "MP", "SAN", "DB"}
+    skills = {k: v for k, v in attrs.items() if k not in _shown}
+    if skills:
+        lines.append("─ 技能 ─")
+        lines.extend(f"{k}:{v}" for k, v in sorted(skills.items()))
     return "\n".join(lines)
 
 
@@ -300,6 +309,12 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
             arg = "d" + suffix + (" " + arg if arg else "")
             cmd = ".rd"
 
+    # .hp+5 / .mp-2 / .san+3 格式：将内联的增减值提取为 arg
+    stat_inline_m = re.match(r"^\.(hp|mp|san)([+-]\d+)$", cmd)
+    if stat_inline_m:
+        arg = stat_inline_m.group(2)
+        cmd = "." + stat_inline_m.group(1)
+
     # 路由
     if cmd in (".r", ".roll"):
         await _cmd_roll(event, arg)
@@ -314,7 +329,7 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
     elif cmd == ".rp":
         await _cmd_rb(event, arg, bonus=False)
     elif cmd == ".coc":
-        await _cmd_coc(event, arg)
+        await _cmd_coc(event, arg, user_id, group_id)
     elif cmd == ".st":
         await _cmd_st(event, arg, user_id, group_id)
     elif cmd == ".sc":
@@ -329,6 +344,14 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
         await _cmd_setcoc(event, arg, user_id, group_id)
     elif cmd == ".jrrp":
         await _cmd_jrrp(event, user_id)
+    elif cmd == ".name":
+        await _cmd_name(event, arg, user_id, group_id)
+    elif cmd in (".del", ".delete"):
+        await _cmd_del(event, arg, user_id, group_id)
+    elif cmd in (".clr", ".clear"):
+        await _cmd_clr(event, user_id, group_id)
+    elif cmd in (".hp", ".mp", ".san"):
+        await _cmd_stat_mod(event, cmd[1:], arg, user_id, group_id)
     elif cmd in (".help", ".h"):
         await _cmd_help(event)
     else:
@@ -339,9 +362,25 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
 # ============ 指令实现 ============
 
 async def _cmd_roll(event, arg: str):
-    """.r 通用掷骰"""
+    """.r 通用掷骰，支持 N#expr 多连骰"""
+    raw = event.get_plaintext().strip()
+
+    # 多连骰格式: .r 3#d6  或  .r3#1d20
+    multi_m = re.match(r'^(\d+)#(.*)$', (arg or "").strip())
+    if multi_m:
+        count = min(int(multi_m.group(1)), 10)
+        expr = multi_m.group(2).strip() or "d100"
+        results = []
+        for _ in range(count):
+            total, desc = _eval_dice_expr(expr)
+            results.append(f"{desc} = {total}" if desc else str(total))
+        msg = f"🎲 {raw} (共{count}次)\n"
+        msg += "\n".join(f"{i + 1}. {r}" for i, r in enumerate(results))
+        await coc_matcher.send(msg)
+        return
+
     total, desc = _eval_dice_expr(arg if arg else "d100")
-    msg = f"🎲 {event.get_plaintext().strip()}\n"
+    msg = f"🎲 {raw}\n"
     if desc:
         msg += f"{desc}\n"
     msg += f"= {total}"
@@ -445,7 +484,11 @@ async def _cmd_rb(event, arg: str, bonus: bool):
     )
 
 
-async def _cmd_coc(event, arg: str):
+# 标准派生属性名规范化（用户可能输入小写）
+_STAT_UPPER = {s.lower(): s for s in ["HP", "MP", "SAN", "DB"]}
+
+
+async def _cmd_coc(event, arg: str, user_id: int, group_id: int):
     """.coc 快速建卡"""
     try:
         count = int(arg) if arg else 1
@@ -454,12 +497,37 @@ async def _cmd_coc(event, arg: str):
     count = max(1, min(count, 10))
 
     results = []
+    single_attrs = None
     for i in range(count):
         attrs = _gen_coc_character()
         header = f"— 角色 {i + 1} —" if count > 1 else "— COC 7版人物作成 —"
         results.append(f"{header}\n{_format_attrs(attrs)}")
+        if count == 1:
+            single_attrs = attrs
 
     await coc_matcher.send("\n\n".join(results))
+
+    # 单人建卡自动存档
+    if single_attrs:
+        session = await get_session()
+        try:
+            row = (await session.execute(
+                select(CocCharacter).where(
+                    CocCharacter.user_id == user_id,
+                    CocCharacter.group_id == group_id
+                )
+            )).scalar_one_or_none()
+            if not row:
+                row = CocCharacter(user_id=user_id, group_id=group_id)
+                session.add(row)
+            row.attributes = single_attrs
+            row.san = single_attrs.get("SAN", 0)
+            row.hp = single_attrs.get("HP", 0)
+            row.mp = single_attrs.get("MP", 0)
+            await session.commit()
+            await coc_matcher.send("✅ 已自动存档，.st show 查看，.st 属性 值 修改")
+        finally:
+            await session.close()
 
 
 async def _cmd_st(event, arg: str, user_id: int, group_id: int):
@@ -495,8 +563,10 @@ async def _cmd_st(event, arg: str, user_id: int, group_id: int):
             if i + 1 < len(tokens):
                 try:
                     val = int(tokens[i + 1])
-                    attrs[tokens[i]] = val
-                    updated.append(f"{tokens[i]}={val}")
+                    # 规范化标准属性名大小写（hp→HP, san→SAN 等）
+                    key = _STAT_UPPER.get(tokens[i].lower(), tokens[i])
+                    attrs[key] = val
+                    updated.append(f"{key}={val}")
                     i += 2
                     continue
                 except ValueError:
@@ -504,8 +574,9 @@ async def _cmd_st(event, arg: str, user_id: int, group_id: int):
             # 尝试匹配 "属性值" 一体格式，如 "力量60"
             m = re.match(r"(.+?)(\d+)$", tokens[i])
             if m:
-                attrs[m.group(1)] = int(m.group(2))
-                updated.append(f"{m.group(1)}={m.group(2)}")
+                key = _STAT_UPPER.get(m.group(1).lower(), m.group(1))
+                attrs[key] = int(m.group(2))
+                updated.append(f"{key}={m.group(2)}")
             i += 1
 
         if not updated:
@@ -617,6 +688,133 @@ async def _cmd_en(event, arg: str, user_id: int, group_id: int):
         await session.close()
 
 
+async def _cmd_name(event, arg: str, user_id: int, group_id: int):
+    """.name 设置角色名"""
+    name = arg.strip()
+    if not name:
+        await coc_matcher.send("用法: .name 角色名\n例: .name 约翰·史密斯")
+        return
+    session = await get_session()
+    try:
+        row = (await session.execute(
+            select(CocCharacter).where(
+                CocCharacter.user_id == user_id,
+                CocCharacter.group_id == group_id
+            )
+        )).scalar_one_or_none()
+        if not row:
+            row = CocCharacter(user_id=user_id, group_id=group_id, attributes={}, name=name)
+            session.add(row)
+        else:
+            row.name = name
+        await session.commit()
+        await coc_matcher.send(f"✅ 角色名已设置: {name}")
+    finally:
+        await session.close()
+
+
+async def _cmd_del(event, arg: str, user_id: int, group_id: int):
+    """.del 删除单个属性"""
+    attr_name = arg.strip()
+    if not attr_name:
+        await coc_matcher.send("用法: .del 属性名\n例: .del 射击")
+        return
+    session = await get_session()
+    try:
+        row = (await session.execute(
+            select(CocCharacter).where(
+                CocCharacter.user_id == user_id,
+                CocCharacter.group_id == group_id
+            )
+        )).scalar_one_or_none()
+        if not row or not row.attributes or attr_name not in row.attributes:
+            await coc_matcher.send(f"属性 [{attr_name}] 不存在")
+            return
+        attrs = dict(row.attributes)
+        del attrs[attr_name]
+        row.attributes = attrs
+        await session.commit()
+        await coc_matcher.send(f"✅ 已删除属性: {attr_name}")
+    finally:
+        await session.close()
+
+
+async def _cmd_clr(event, user_id: int, group_id: int):
+    """.clr 清空角色卡"""
+    session = await get_session()
+    try:
+        row = (await session.execute(
+            select(CocCharacter).where(
+                CocCharacter.user_id == user_id,
+                CocCharacter.group_id == group_id
+            )
+        )).scalar_one_or_none()
+        if not row:
+            await coc_matcher.send("你没有角色卡")
+            return
+        row.attributes = {}
+        row.name = ""
+        row.san = 0
+        row.hp = 0
+        row.mp = 0
+        await session.commit()
+        await coc_matcher.send("✅ 角色卡已清空")
+    finally:
+        await session.close()
+
+
+async def _cmd_stat_mod(event, stat_key: str, delta_str: str, user_id: int, group_id: int):
+    """.hp/.mp/.san 查看或修改数值"""
+    attr_name = stat_key.upper()  # hp→HP mp→MP san→SAN
+    session = await get_session()
+    try:
+        row = (await session.execute(
+            select(CocCharacter).where(
+                CocCharacter.user_id == user_id,
+                CocCharacter.group_id == group_id
+            )
+        )).scalar_one_or_none()
+
+        if not row or not row.attributes or attr_name not in row.attributes:
+            await coc_matcher.send(f"未找到 {attr_name}，请先用 .st {attr_name} 值 设置")
+            return
+
+        old_val = row.attributes[attr_name]
+
+        # 无参数 → 仅显示当前值
+        if not delta_str:
+            await coc_matcher.send(f"当前 {attr_name}: {old_val}")
+            return
+
+        try:
+            delta = int(delta_str)
+        except ValueError:
+            await coc_matcher.send(f"用法: .{stat_key}+5  或  .{stat_key}-3")
+            return
+
+        new_val = max(0, old_val + delta)
+        attrs = dict(row.attributes)
+        attrs[attr_name] = new_val
+        row.attributes = attrs
+        if attr_name == "HP":
+            row.hp = new_val
+        elif attr_name == "MP":
+            row.mp = new_val
+        elif attr_name == "SAN":
+            row.san = new_val
+        await session.commit()
+
+        sign = "+" if delta >= 0 else ""
+        msg = f"💊 {attr_name}: {old_val} → {new_val}（{sign}{delta}）"
+        if attr_name == "HP" and new_val == 0:
+            msg += "\n💀 HP归零，调查员死亡！"
+        elif attr_name == "SAN" and new_val == 0:
+            msg += "\n⚠️ SAN值归零，调查员永久疯狂！"
+        await coc_matcher.send(msg)
+    finally:
+        await session.close()
+
+
 async def _cmd_ti(event):
     """.ti 临时疯狂"""
     idx = random.randint(1, len(TI_TABLE))
@@ -683,17 +881,28 @@ async def _cmd_help(event):
     await coc_matcher.send(
         "📖 COC跑团指令帮助\n"
         "—————————————\n"
+        "【骰子】\n"
         ".r [表达式] — 掷骰 (如 .r 3d6+2)\n"
-        ".rd — 快速D100\n"
+        ".r N#表达式 — 多连骰 (如 .r 3#d6)\n"
+        ".rd[面数] — 快速掷骰 (.rd .rd6 .rd100)\n"
         ".ra 属性 [值] — 属性检定\n"
         ".rh [表达式] — 暗骰(私聊)\n"
         ".rb/.rp [N] — 奖励骰/惩罚骰\n"
+        "\n【角色卡】\n"
         ".coc [N] — 快速建卡\n"
-        ".st 属性 值 — 设置属性\n"
+        ".name 名字 — 设置角色名\n"
+        ".st 属性 值 — 设置属性 (可批量)\n"
         ".st show — 查看角色卡\n"
-        ".sc 成功/失败 — 理智检定\n"
+        ".del 属性 — 删除某属性\n"
+        ".clr — 清空角色卡\n"
+        "\n【战斗/成长】\n"
+        ".hp+N / .hp-N — 修改HP\n"
+        ".mp+N / .mp-N — 修改MP\n"
+        ".san+N / .san-N — 修改SAN\n"
+        ".sc 成功损失/失败损失 — 理智检定\n"
         ".en 属性 — 成长检定\n"
-        ".ti/.li — 疯狂症状表\n"
+        "\n【其他】\n"
+        ".ti/.li — 随机疯狂症状\n"
         ".setcoc [0-5] — 设置判定规则\n"
         ".jrrp — 今日人品"
     )

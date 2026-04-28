@@ -48,6 +48,8 @@ class GroupMessage(Base):
     nickname: Mapped[str] = mapped_column(String(100), default="")
     content: Mapped[str] = mapped_column(Text, default="")
     has_image: Mapped[bool] = mapped_column(Boolean, default=False)
+    image_url: Mapped[str] = mapped_column(Text, default="")   # 第一张图的 URL，用于上下文传图
+    is_bot: Mapped[bool] = mapped_column(Boolean, default=False)  # 是否是 bot 自己的发言
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
