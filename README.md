@@ -38,9 +38,50 @@ RinBot 将 QQ 群聊中的日常陪伴和后台管理放在一起：群友可以
 
 ## 界面预览
 
-控制台提供八个管理页面，适配桌面与窄屏，支持明暗主题。后续展示将按「运行概览 → QQ 对话 → 人格和值班 → 小游戏 → 表情库 → 记忆与关系」排列。
+以下为维护者提供的实际使用效果，示例采用艾蕾人格。用户昵称与头像已匿名化。
 
-截图正在整理，当前不使用占位图片。截图文件约定与补充方法见[截图说明](docs/screenshots/README.md)。
+### QQ 对话与表情互动
+
+自然语言对话中保持角色风格，并配合表情参与群聊。图中的联网搜索需要另外配置[搜索后端](docs/extensions.md#联网搜索)。
+
+<p align="center">
+  <img src="docs/screenshots/qq-chat.webp" alt="艾蕾人格的 QQ 对话、搜索结果回复和表情互动" width="420">
+</p>
+
+### 群内小游戏
+
+发送 `#小游戏` 查看六种玩法，再进入对应菜单了解规则和开局指令。下面展示小游戏合集；展开后可以查看 QQ 中的菜单效果和五子棋教程。
+
+<p align="center">
+  <img src="docs/screenshots/minigames-menu.webp" alt="小游戏合集：五子棋、井字棋、象棋、围棋、成语填空和猜数字" width="420">
+</p>
+
+<details>
+<summary>查看 QQ 菜单与五子棋规则教程</summary>
+
+发送 `#小游戏` 后收到的菜单：
+
+<p align="center">
+  <img src="docs/screenshots/qq-minigames.webp" alt="QQ 中发送小游戏指令后收到的菜单图片" width="420">
+</p>
+
+五子棋菜单说明人机与双人开局、坐标落子、悔棋和结束对局。高级难度需单独配置引擎。
+
+<p align="center">
+  <img src="docs/screenshots/gomoku-guide.webp" alt="五子棋规则、开局指令和落子坐标教程" width="560">
+</p>
+
+</details>
+
+### 图片生成（可选扩展）
+
+在 QQ 中发送 `#图片生成 提示词`，机器人显示处理状态并返回图片。需要自行配置[绘图接口](docs/extensions.md#绘图与图片编辑)，截图中的耗时仅代表该次请求。
+
+| 提示词与生成过程 | 返回图片 |
+| --- | --- |
+| <img src="docs/screenshots/image-generation-request.webp" alt="QQ 图片生成指令、等待提示和返回过程" width="350"> | <img src="docs/screenshots/image-generation-result.webp" alt="图片生成结果与本次请求耗时" width="350"> |
+
+控制台运行概览、人格和值班表、表情库、记忆与关系的截图将继续补充。当前截图清单和取景建议见[截图说明](docs/screenshots/README.md)。
 
 ## 快速部署
 
