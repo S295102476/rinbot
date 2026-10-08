@@ -1,11 +1,13 @@
 """COC 克苏鲁的呼唤 跑团骰子插件
 
 指令前缀: .
-支持: .r .rd .ra .rh .rb .rp .coc .st .sc .en .ti .li .setcoc .jrrp .help
+支持: .r .rd .ra/.rc .rh .rb .rp .coc .st .sc .en .ti .li .setcoc .jrrp .help
 """
 
 import hashlib
+import ast
 import json
+import operator
 import random
 import re
 from datetime import date
@@ -56,59 +58,95 @@ def _roll(n: int, m: int) -> list[int]:
     return [random.randint(1, m) for _ in range(n)]
 
 
+class DiceExpressionError(ValueError):
+    """Raised when a user supplied dice expression is invalid or unsafe."""
+
+
+_DICE_TOKEN = re.compile(
+    r"(?<![A-Za-z0-9_])(?P<count>\d{0,3})d(?P<sides>\d{1,5})"
+    r"(?:(?P<keep>kh|kl|k|p)(?P<keep_count>\d{1,3}))?"
+    r"(?![A-Za-z0-9_])",
+    flags=re.IGNORECASE,
+)
+_MAX_DICE = 100
+_MAX_SIDES = 10_000
+_MAX_EXPRESSION_LENGTH = 200
+
+
+def _safe_integer_eval(expression: str) -> int:
+    """Evaluate only integer arithmetic nodes; never execute arbitrary input."""
+    try:
+        tree = ast.parse(expression, mode="eval")
+    except (SyntaxError, ValueError) as exc:
+        raise DiceExpressionError("表达式格式错误") from exc
+
+    binary_ops = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: lambda left, right: int(left / right),
+    }
+
+    def visit(node: ast.AST) -> int:
+        if isinstance(node, ast.Expression):
+            return visit(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int) and not isinstance(node.value, bool):
+            return int(node.value)
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            value = visit(node.operand)
+            return value if isinstance(node.op, ast.UAdd) else -value
+        if isinstance(node, ast.BinOp) and type(node.op) in binary_ops:
+            left = visit(node.left)
+            right = visit(node.right)
+            if isinstance(node.op, (ast.Div,)) and right == 0:
+                raise DiceExpressionError("不能除以零")
+            value = binary_ops[type(node.op)](left, right)
+            if abs(value) > 10**9:
+                raise DiceExpressionError("计算结果过大")
+            return int(value)
+        raise DiceExpressionError("只支持整数四则运算")
+
+    return visit(tree)
+
+
 def _eval_dice_expr(expr: str) -> tuple[int, str]:
-    """
-    解析并计算骰子表达式, 如 3d6+2, d100, 2d10kh1
-    返回 (总值, 过程描述)
-    """
-    expr = expr.strip().lower()
-    if not expr:
-        expr = "d100"
+    """解析并计算安全骰子表达式，如 ``7d3``、``d100``、``4d6kh3``。"""
+    expression = (expr or "").strip().lower() or "d100"
+    if len(expression) > _MAX_EXPRESSION_LENGTH:
+        raise DiceExpressionError("表达式过长")
 
-    # 匹配 NdM 模式
-    pattern = re.compile(r"(\d*)d(\d+)(?:(kh|kl)(\d+))?")
+    details: list[str] = []
 
-    def replacer(m):
-        n = int(m.group(1)) if m.group(1) else 1
-        sides = int(m.group(2))
-        n = min(n, 100)  # 防滥用
-        sides = min(sides, 10000)
-        rolls = _roll(n, sides)
-        keep_mode = m.group(3)
-        keep_n = int(m.group(4)) if m.group(4) else n
+    def replacer(match: re.Match[str]) -> str:
+        count = int(match.group("count") or 1)
+        sides = int(match.group("sides"))
+        if count < 1 or count > _MAX_DICE:
+            raise DiceExpressionError(f"单次最多掷 {_MAX_DICE} 个骰子")
+        if sides < 1 or sides > _MAX_SIDES:
+            raise DiceExpressionError(f"骰子面数必须在 1-{_MAX_SIDES} 之间")
 
-        if keep_mode == "kh":
-            kept = sorted(rolls, reverse=True)[:keep_n]
-        elif keep_mode == "kl":
-            kept = sorted(rolls)[:keep_n]
+        rolls = _roll(count, sides)
+        keep_mode = (match.group("keep") or "").lower()
+        keep_count = int(match.group("keep_count") or count)
+        if keep_mode:
+            if keep_count < 1 or keep_count > count:
+                raise DiceExpressionError("保留骰子的数量必须在 1 到骰子数量之间")
+            if keep_mode in {"kh", "k"}:
+                kept = sorted(rolls, reverse=True)[:keep_count]
+            else:
+                kept = sorted(rolls)[:keep_count]
         else:
             kept = rolls
 
-        detail = f"[{'+'.join(str(r) for r in rolls)}]"
+        detail = f"[{'+'.join(str(value) for value in rolls)}]"
         if keep_mode:
-            detail += f"→{'+'.join(str(r) for r in kept)}"
-        return str(sum(kept)), detail
-
-    details = []
-    result_expr = expr
-
-    for m in pattern.finditer(expr):
-        val, detail = replacer(m)
+            detail += f"→{'+'.join(str(value) for value in kept)}"
         details.append(detail)
-        result_expr = result_expr.replace(m.group(0), val, 1)
+        return str(sum(kept))
 
-    # 安全计算剩余的加减乘除
-    allowed = set("0123456789+-*/(). ")
-    if all(c in allowed for c in result_expr):
-        try:
-            total = int(eval(result_expr))  # noqa: S307 - input is sanitized
-        except Exception:
-            total = 0
-    else:
-        total = 0
-
-    desc = " ".join(details) if details else ""
-    return total, desc
+    result_expression = _DICE_TOKEN.sub(replacer, expression)
+    total = _safe_integer_eval(result_expression)
+    return total, " ".join(details)
 
 
 # ============ COC 判定规则 ============
@@ -281,6 +319,44 @@ def _dot_command_rule() -> Rule:
     return Rule(_rule)
 
 
+def _parse_command(text: str) -> tuple[str, str]:
+    """Split a dot command and normalize compact aliases before dispatch."""
+    parts = (text or "").strip().split(None, 1)
+    if not parts:
+        return "", ""
+    cmd = parts[0].lower()
+    arg = parts[1].strip() if len(parts) > 1 else ""
+
+    # .coc 后面可能直接跟数字（如 .coc5 .COC3）。
+    if cmd.startswith(".coc") and cmd != ".coc":
+        suffix = cmd[4:]
+        if suffix.isdigit():
+            arg = suffix + (" " + arg if arg else "")
+            cmd = ".coc"
+
+    # .rd 后面可能直接跟面数（如 .rd6 .rd100）。
+    if cmd.startswith(".rd") and cmd != ".rd":
+        suffix = cmd[3:]
+        if suffix.isdigit():
+            arg = "d" + suffix + (" " + arg if arg else "")
+            cmd = ".rd"
+
+    # 紧凑骰点（如 .r7d3、.r#7 d3、.roll2d20）。仅当后缀明确像骰子
+    # 表达式时才拆分，避免把未知的 .random 等命令误判成 .r。
+    if cmd not in {".r", ".roll", ".ra", ".rc", ".rd", ".rh", ".rb", ".rp"}:
+        compact_m = re.match(r"^\.(?:r|roll)(?P<suffix>(?:\d|d|#).*)$", cmd, re.IGNORECASE)
+        if compact_m:
+            suffix = compact_m.group("suffix")
+            arg = suffix + (" " + arg if arg else "")
+            cmd = ".r"
+
+    stat_inline_m = re.match(r"^\.(hp|mp|san)([+-]\d+)$", cmd)
+    if stat_inline_m:
+        arg = stat_inline_m.group(2)
+        cmd = "." + stat_inline_m.group(1)
+    return cmd, arg
+
+
 coc_matcher = on_message(rule=_dot_command_rule(), priority=6, block=True)
 
 
@@ -289,38 +365,14 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
     text = event.get_plaintext().strip()
     user_id = event.user_id
     group_id = event.group_id
-
-    # 解析指令 — 取第一个空格前的部分
-    parts = text.split(None, 1)
-    cmd = parts[0].lower()
-    arg = parts[1].strip() if len(parts) > 1 else ""
-
-    # .coc 后面可能直接跟数字（如 .coc5 .COC3），提取数字作为参数
-    if cmd.startswith(".coc") and cmd != ".coc":
-        suffix = cmd[4:]
-        if suffix.isdigit():
-            arg = suffix + (" " + arg if arg else "")
-            cmd = ".coc"
-
-    # .rd 后面可能直接跟面数（如 .rd6 .rd100），提取为骰子面数
-    if cmd.startswith(".rd") and cmd != ".rd":
-        suffix = cmd[3:]
-        if re.match(r"^\d+$", suffix):
-            arg = "d" + suffix + (" " + arg if arg else "")
-            cmd = ".rd"
-
-    # .hp+5 / .mp-2 / .san+3 格式：将内联的增减值提取为 arg
-    stat_inline_m = re.match(r"^\.(hp|mp|san)([+-]\d+)$", cmd)
-    if stat_inline_m:
-        arg = stat_inline_m.group(2)
-        cmd = "." + stat_inline_m.group(1)
+    cmd, arg = _parse_command(text)
 
     # 路由
     if cmd in (".r", ".roll"):
         await _cmd_roll(event, arg)
     elif cmd == ".rd":
         await _cmd_roll(event, arg if arg else "d100")
-    elif cmd == ".ra":
+    elif cmd in (".ra", ".rc"):
         await _cmd_ra(event, arg, user_id, group_id)
     elif cmd == ".rh":
         await _cmd_rh(bot, event, arg)
@@ -362,24 +414,36 @@ async def handle_coc(bot: Bot, event: GroupMessageEvent):
 # ============ 指令实现 ============
 
 async def _cmd_roll(event, arg: str):
-    """.r 通用掷骰，支持 N#expr 多连骰"""
+    """.r 通用掷骰，支持 NdM、N#expr 和 #N expr 多轮骰。"""
     raw = event.get_plaintext().strip()
 
     # 多连骰格式: .r 3#d6  或  .r3#1d20
-    multi_m = re.match(r'^(\d+)#(.*)$', (arg or "").strip())
+    normalized_arg = (arg or "").strip()
+    multi_m = re.match(r"^(?:(\d+)\s*#\s*(.+)|#\s*(\d+)\s+(.+))$", normalized_arg)
     if multi_m:
-        count = min(int(multi_m.group(1)), 10)
-        expr = multi_m.group(2).strip() or "d100"
+        count = int(multi_m.group(1) or multi_m.group(3))
+        expr = (multi_m.group(2) or multi_m.group(4) or "d100").strip()
+        if count < 1 or count > 10:
+            await coc_matcher.send("多轮骰次数必须在 1-10 之间")
+            return
         results = []
         for _ in range(count):
-            total, desc = _eval_dice_expr(expr)
+            try:
+                total, desc = _eval_dice_expr(expr)
+            except DiceExpressionError as exc:
+                await coc_matcher.send(f"骰子表达式错误：{exc}")
+                return
             results.append(f"{desc} = {total}" if desc else str(total))
         msg = f"🎲 {raw} (共{count}次)\n"
         msg += "\n".join(f"{i + 1}. {r}" for i, r in enumerate(results))
         await coc_matcher.send(msg)
         return
 
-    total, desc = _eval_dice_expr(arg if arg else "d100")
+    try:
+        total, desc = _eval_dice_expr(normalized_arg or "d100")
+    except DiceExpressionError as exc:
+        await coc_matcher.send(f"骰子表达式错误：{exc}")
+        return
     msg = f"🎲 {raw}\n"
     if desc:
         msg += f"{desc}\n"
@@ -442,7 +506,11 @@ async def _cmd_ra(event, arg: str, user_id: int, group_id: int):
 
 async def _cmd_rh(bot: Bot, event, arg: str):
     """.rh 暗骰 — 结果私聊"""
-    total, desc = _eval_dice_expr(arg if arg else "d100")
+    try:
+        total, desc = _eval_dice_expr(arg if arg else "d100")
+    except DiceExpressionError as exc:
+        await coc_matcher.send(f"骰子表达式错误：{exc}")
+        return
     msg = f"🎲 暗骰: {arg or 'd100'}\n"
     if desc:
         msg += f"{desc}\n"
@@ -605,6 +673,14 @@ async def _cmd_sc(event, arg: str, user_id: int, group_id: int):
         return
 
     success_expr, fail_expr = arg.split("/", 1)
+
+    try:
+        # Validate both loss expressions before reading or changing the card.
+        _eval_dice_expr(success_expr)
+        _eval_dice_expr(fail_expr)
+    except DiceExpressionError as exc:
+        await coc_matcher.send(f"理智损失表达式错误：{exc}")
+        return
 
     session = await get_session()
     try:
@@ -882,10 +958,10 @@ async def _cmd_help(event):
         "📖 COC跑团指令帮助\n"
         "—————————————\n"
         "【骰子】\n"
-        ".r [表达式] — 掷骰 (如 .r 3d6+2)\n"
-        ".r N#表达式 — 多连骰 (如 .r 3#d6)\n"
+        ".r [表达式] — 掷骰 (如 .r 3d6+2 或 .r7d3)\n"
+        ".r N#表达式 / .r#N 表达式 — 多轮骰 (如 .r 3#d6)\n"
         ".rd[面数] — 快速掷骰 (.rd .rd6 .rd100)\n"
-        ".ra 属性 [值] — 属性检定\n"
+        ".ra/.rc 属性 [值] — 属性检定\n"
         ".rh [表达式] — 暗骰(私聊)\n"
         ".rb/.rp [N] — 奖励骰/惩罚骰\n"
         "\n【角色卡】\n"

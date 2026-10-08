@@ -1,0 +1,108 @@
+name: rinbot
+
+services:
+  # Explicitly invoked tools work before .env/runtime exist; no live services start.
+  init:
+    profiles: [tools]
+    build:
+      context: .
+      target: init
+    volumes:
+      - .:/workspace
+    stdin_open: true
+    tty: true
+    command: ["--root", "/workspace"]
+
+  bot:
+    build:
+      context: .
+      target: bot
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "${RINBOT_BIND_HOST:-127.0.0.1}:${RINBOT_PORT:-8080}:8080"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - type: bind
+        source: ./runtime/config.yaml
+        target: /app/qq-bot-py/config.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./runtime/bot.env
+        target: /app/qq-bot-py/.env
+        read_only: true
+        bind:
+          create_host_path: false
+      - bot_data:/app/qq-bot-py/data
+      - bot_persona:/app/qq-bot-py/persona
+    healthcheck:
+      test: ["CMD", "python", "tools/container_health.py"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+    stop_grace_period: 30s
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: rinbot
+      MYSQL_USER: rinbot
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
+      TZ: Asia/Shanghai
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql -h 127.0.0.1 -u rinbot rinbot -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 45s
+      retries: 12
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command: ["sh", "-c", "test -n \"$$REDIS_PASSWORD\" && exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-}
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  bot_data:
+  bot_persona:
+  mysql_data:
+  redis_data:
+  minio_data:

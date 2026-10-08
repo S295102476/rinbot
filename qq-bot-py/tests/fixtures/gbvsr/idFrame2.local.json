@@ -1,0 +1,3645 @@
+{
+  "character": "Id",
+  "source": "https://www.dustloop.com/w/GBVSR/Id",
+  "capturedAt": "2026-09-22T03:22:54.233971+00:00",
+  "updateVersion": "2.61",
+  "sourceRevision": null,
+  "rows": [
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.L",
+        "Damage": "600",
+        "Guard": "Mid",
+        "Startup": "5",
+        "Active": "3",
+        "Recovery": "6",
+        "On-Block": "+4",
+        "On-Hit": "+8",
+        "On Counter Hit": "+10",
+        "Level": "1",
+        "Invuln": "",
+        "SBG Gain": "3",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/2/23/GBVSR_Id_cL.png/180px-GBVSR_Id_cL.png",
+          "label": "GBVSR_Id_cL.png",
+          "filename": "GBVSR_Id_cL.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/2/23/GBVSR_Id_cL.png",
+          "mime": "image/png",
+          "size": "548463",
+          "sha1": "185d5759adcc5b9c2e6badd58d4789216d37eb74",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cL.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/7/72/GBVSR_Id_cL_Hitbox.png/180px-GBVSR_Id_cL_Hitbox.png",
+          "label": "GBVSR_Id_cL_Hitbox.png",
+          "filename": "GBVSR_Id_cL_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/7/72/GBVSR_Id_cL_Hitbox.png",
+          "mime": "image/png",
+          "size": "521413",
+          "sha1": "d6673308343bcf2c480991eb538724a44ccb80a9",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cL_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cL.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cL_Hitbox.png"
+      ],
+      "aliases": [
+        "cl",
+        "c.L"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.M",
+        "Damage": "1100",
+        "Guard": "Mid",
+        "Startup": "7",
+        "Active": "3",
+        "Recovery": "12",
+        "On-Block": "±0",
+        "On-Hit": "+4",
+        "On Counter Hit": "+8",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "4",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/4/45/GBVSR_Id_cM.png/180px-GBVSR_Id_cM.png",
+          "label": "GBVSR_Id_cM.png",
+          "filename": "GBVSR_Id_cM.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/4/45/GBVSR_Id_cM.png",
+          "mime": "image/png",
+          "size": "547011",
+          "sha1": "6a0d0376c15f0321c800ccf93d340aaee0a8c9e0",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cM.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/e/e0/GBVSR_Id_cM_Hitbox.png/180px-GBVSR_Id_cM_Hitbox.png",
+          "label": "GBVSR_Id_cM_Hitbox.png",
+          "filename": "GBVSR_Id_cM_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/e/e0/GBVSR_Id_cM_Hitbox.png",
+          "mime": "image/png",
+          "size": "516359",
+          "sha1": "796e71d2a6c91a0d1160a0336a0356b7201e3e4d",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cM_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cM.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cM_Hitbox.png"
+      ],
+      "aliases": [
+        "cm",
+        "c.M"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.H",
+        "Damage": "1600",
+        "Guard": "Mid",
+        "Startup": "9",
+        "Active": "4",
+        "Recovery": "18",
+        "On-Block": "-3",
+        "On-Hit": "+1",
+        "On Counter Hit": "+13",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/7/71/GBVSR_Id_cH.png/180px-GBVSR_Id_cH.png",
+          "label": "GBVSR_Id_cH.png",
+          "filename": "GBVSR_Id_cH.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/7/71/GBVSR_Id_cH.png",
+          "mime": "image/png",
+          "size": "534306",
+          "sha1": "55ca48a8d87db988d4628346e24ef940cf7be195",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cH.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/d2/GBVSR_Id_cH_Hitbox_1.png/180px-GBVSR_Id_cH_Hitbox_1.png",
+          "label": "GBVSR_Id_cH_Hitbox_1.png",
+          "filename": "GBVSR_Id_cH_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/d2/GBVSR_Id_cH_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "510750",
+          "sha1": "1ff3b2420a657d4fb3fa33269789944961c13e70",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cH_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/9e/GBVSR_Id_cH_Hitbox_2.png/180px-GBVSR_Id_cH_Hitbox_2.png",
+          "label": "GBVSR_Id_cH_Hitbox_2.png",
+          "filename": "GBVSR_Id_cH_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/9e/GBVSR_Id_cH_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "492499",
+          "sha1": "12848f32f5c4b59d2eaa8b9f6c0dcad2d58e80b4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cH_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cH.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cH_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_cH_Hitbox_2.png"
+      ],
+      "aliases": [
+        "ch",
+        "c.H"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.XX",
+        "Damage": "700",
+        "Guard": "Mid",
+        "Startup": "9",
+        "Active": "3",
+        "Recovery": "15",
+        "On-Block": "-3",
+        "On-Hit": "+1",
+        "On Counter Hit": "+5",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "4.8",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/b3/GBVSR_Id_cXX.png/180px-GBVSR_Id_cXX.png",
+          "label": "GBVSR_Id_cXX.png",
+          "filename": "GBVSR_Id_cXX.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/b3/GBVSR_Id_cXX.png",
+          "mime": "image/png",
+          "size": "600651",
+          "sha1": "b14f7a3fc69a12602c4951c36cf550acabeb8516",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXX.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/57/GBVSR_Id_cXX_Hitbox.png/180px-GBVSR_Id_cXX_Hitbox.png",
+          "label": "GBVSR_Id_cXX_Hitbox.png",
+          "filename": "GBVSR_Id_cXX_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/57/GBVSR_Id_cXX_Hitbox.png",
+          "mime": "image/png",
+          "size": "575296",
+          "sha1": "b5cfa8469769685da9b461e9c001e11c42bd0709",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXX_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXX.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXX_Hitbox.png"
+      ],
+      "aliases": [
+        "cxx",
+        "c.XX"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.XXX",
+        "Damage": "1000",
+        "Guard": "Mid",
+        "Startup": "12",
+        "Active": "3",
+        "Recovery": "18",
+        "On-Block": "-4",
+        "On-Hit": "±0",
+        "On Counter Hit": "+8",
+        "Level": "3",
+        "Invuln": "",
+        "SBG Gain": "6.0",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/c5/GBVSR_Id_cXXX.png/180px-GBVSR_Id_cXXX.png",
+          "label": "GBVSR_Id_cXXX.png",
+          "filename": "GBVSR_Id_cXXX.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/c5/GBVSR_Id_cXXX.png",
+          "mime": "image/png",
+          "size": "674025",
+          "sha1": "d38821ce2f298a9ea77dfbdb7895873991917602",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXXX.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/04/GBVSR_Id_cXXX_Hitbox.png/180px-GBVSR_Id_cXXX_Hitbox.png",
+          "label": "GBVSR_Id_cXXX_Hitbox.png",
+          "filename": "GBVSR_Id_cXXX_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/04/GBVSR_Id_cXXX_Hitbox.png",
+          "mime": "image/png",
+          "size": "646210",
+          "sha1": "009bc28dbe0b76d2577143b9047daf8d2237ae51",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXXX_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXXX.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXXX_Hitbox.png"
+      ],
+      "aliases": [
+        "cxxx",
+        "c.XXX"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.XX6M",
+        "Damage": "1000",
+        "Guard": "Low",
+        "Startup": "12",
+        "Active": "3",
+        "Recovery": "16",
+        "On-Block": "-4",
+        "On-Hit": "KD +30",
+        "On Counter Hit": "HKD +55",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "4.8",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/4/4f/GBVSR_Id_cXX6M.png/180px-GBVSR_Id_cXX6M.png",
+          "label": "GBVSR_Id_cXX6M.png",
+          "filename": "GBVSR_Id_cXX6M.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/4/4f/GBVSR_Id_cXX6M.png",
+          "mime": "image/png",
+          "size": "542140",
+          "sha1": "c9d325d102a38f8c4c76d0012be35b678f8fa002",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXX6M.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/0f/GBVSR_Id_cXX6M_Hitbox.png/180px-GBVSR_Id_cXX6M_Hitbox.png",
+          "label": "GBVSR_Id_cXX6M_Hitbox.png",
+          "filename": "GBVSR_Id_cXX6M_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/0f/GBVSR_Id_cXX6M_Hitbox.png",
+          "mime": "image/png",
+          "size": "503245",
+          "sha1": "d76a5ba2b5ecfd7f7050d4552b380a8b1f9093ef",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXX6M_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXX6M.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXX6M_Hitbox.png"
+      ],
+      "aliases": [
+        "cxx6m",
+        "c.XX6M"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "c.XX6H",
+        "Damage": "1000",
+        "Guard": "High",
+        "Startup": "18",
+        "Active": "3",
+        "Recovery": "22",
+        "On-Block": "-4",
+        "On-Hit": "+1 Force Crouch",
+        "On Counter Hit": "HKD +32",
+        "Level": "2",
+        "Invuln": "1-20 Throw",
+        "SBG Gain": "4.8",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a9/GBVSR_Id_cXX6H.png/180px-GBVSR_Id_cXX6H.png",
+          "label": "GBVSR_Id_cXX6H.png",
+          "filename": "GBVSR_Id_cXX6H.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a9/GBVSR_Id_cXX6H.png",
+          "mime": "image/png",
+          "size": "591847",
+          "sha1": "8eb536a199d6a6b5c019bdf626f8196082195c38",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXX6H.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/1c/GBVSR_Id_cXX6H_Hitbox.png/180px-GBVSR_Id_cXX6H_Hitbox.png",
+          "label": "GBVSR_Id_cXX6H_Hitbox.png",
+          "filename": "GBVSR_Id_cXX6H_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/1c/GBVSR_Id_cXX6H_Hitbox.png",
+          "mime": "image/png",
+          "size": "519556",
+          "sha1": "603d8932d8f29cf79d68d07cb4c02013d6307106",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_cXX6H_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXX6H.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_cXX6H_Hitbox.png"
+      ],
+      "aliases": [
+        "cxx6h",
+        "c.XX6H"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "f.L",
+        "Damage": "600",
+        "Guard": "Mid",
+        "Startup": "6",
+        "Active": "3",
+        "Recovery": "9",
+        "On-Block": "+1",
+        "On-Hit": "+5",
+        "On Counter Hit": "+7",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/3c/GBVSR_Id_fL.png/180px-GBVSR_Id_fL.png",
+          "label": "GBVSR_Id_fL.png",
+          "filename": "GBVSR_Id_fL.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/3c/GBVSR_Id_fL.png",
+          "mime": "image/png",
+          "size": "448593",
+          "sha1": "21a6eb88c15d1d6ca1d29cc8f8d2c9c8f2d03fd4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fL.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/8f/GBVSR_Id_fL_Hitbox_1.png/180px-GBVSR_Id_fL_Hitbox_1.png",
+          "label": "GBVSR_Id_fL_Hitbox_1.png",
+          "filename": "GBVSR_Id_fL_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/8f/GBVSR_Id_fL_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "419866",
+          "sha1": "92e7ac4c72f020ec213d420623f23c23b60f1b3c",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fL_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/09/GBVSR_Id_fL_Hitbox_2.png/180px-GBVSR_Id_fL_Hitbox_2.png",
+          "label": "GBVSR_Id_fL_Hitbox_2.png",
+          "filename": "GBVSR_Id_fL_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/09/GBVSR_Id_fL_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "444867",
+          "sha1": "93aaff28d615313048838f4d0d9b1d1c3b7eab06",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fL_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_fL.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_fL_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_fL_Hitbox_2.png"
+      ],
+      "aliases": [
+        "fl",
+        "f.L"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "f.M",
+        "Damage": "900",
+        "Guard": "Mid",
+        "Startup": "9",
+        "Active": "3",
+        "Recovery": "16",
+        "On-Block": "-4",
+        "On-Hit": "±0",
+        "On Counter Hit": "+4",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/6/67/GBVSR_Id_fM.png/180px-GBVSR_Id_fM.png",
+          "label": "GBVSR_Id_fM.png",
+          "filename": "GBVSR_Id_fM.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/6/67/GBVSR_Id_fM.png",
+          "mime": "image/png",
+          "size": "620330",
+          "sha1": "4eb2a385adaf29114f28f96d1fbe04216764f977",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fM.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/cc/GBVSR_Id_fM_Hitbox.png/180px-GBVSR_Id_fM_Hitbox.png",
+          "label": "GBVSR_Id_fM_Hitbox.png",
+          "filename": "GBVSR_Id_fM_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/cc/GBVSR_Id_fM_Hitbox.png",
+          "mime": "image/png",
+          "size": "594382",
+          "sha1": "d8a571ea9b7ebfec575746d610b77293b9ddac56",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fM_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_fM.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_fM_Hitbox.png"
+      ],
+      "aliases": [
+        "fm",
+        "f.M"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "f.H",
+        "Damage": "1300",
+        "Guard": "Mid",
+        "Startup": "10",
+        "Active": "5",
+        "Recovery": "22",
+        "On-Block": "-10",
+        "On-Hit": "-6",
+        "On Counter Hit": "-2",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/10/GBVSR_Id_fH.png/180px-GBVSR_Id_fH.png",
+          "label": "GBVSR_Id_fH.png",
+          "filename": "GBVSR_Id_fH.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/10/GBVSR_Id_fH.png",
+          "mime": "image/png",
+          "size": "724783",
+          "sha1": "6b76e2b60db7886024c36288f9b75f84a2359f4c",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fH.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/aa/GBVSR_Id_fH_Hitbox.png/180px-GBVSR_Id_fH_Hitbox.png",
+          "label": "GBVSR_Id_fH_Hitbox.png",
+          "filename": "GBVSR_Id_fH_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/aa/GBVSR_Id_fH_Hitbox.png",
+          "mime": "image/png",
+          "size": "691448",
+          "sha1": "d906b0708c05544416145149739336faa659b104",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_fH_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_fH.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_fH_Hitbox.png"
+      ],
+      "aliases": [
+        "fh",
+        "f.H"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "2L",
+        "Damage": "400",
+        "Guard": "Low",
+        "Startup": "6",
+        "Active": "3",
+        "Recovery": "10",
+        "On-Block": "-2",
+        "On-Hit": "+2",
+        "On Counter Hit": "+4",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/6/6b/GBVSR_Id_2L.png/180px-GBVSR_Id_2L.png",
+          "label": "GBVSR_Id_2L.png",
+          "filename": "GBVSR_Id_2L.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/6/6b/GBVSR_Id_2L.png",
+          "mime": "image/png",
+          "size": "351966",
+          "sha1": "e98fc0e6a8a8319d4bf39405776126511f984896",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2L.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/c6/GBVSR_Id_2L_Hitbox.png/180px-GBVSR_Id_2L_Hitbox.png",
+          "label": "GBVSR_Id_2L_Hitbox.png",
+          "filename": "GBVSR_Id_2L_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/c6/GBVSR_Id_2L_Hitbox.png",
+          "mime": "image/png",
+          "size": "325537",
+          "sha1": "ab20796caac9fd6716a7cbe251cbe8730a104aa4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2L_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2L.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2L_Hitbox.png"
+      ],
+      "aliases": [
+        "2l",
+        "2L"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "2M",
+        "Damage": "900",
+        "Guard": "Mid",
+        "Startup": "7",
+        "Active": "5",
+        "Recovery": "15",
+        "On-Block": "-5",
+        "On-Hit": "-1",
+        "On Counter Hit": "+3",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/c1/GBVSR_Id_2M.png/180px-GBVSR_Id_2M.png",
+          "label": "GBVSR_Id_2M.png",
+          "filename": "GBVSR_Id_2M.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/c1/GBVSR_Id_2M.png",
+          "mime": "image/png",
+          "size": "441346",
+          "sha1": "a90611c1c9825b185661a4c258a8e6e81eb768df",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2M.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/09/GBVSR_Id_2M_Hitbox.png/180px-GBVSR_Id_2M_Hitbox.png",
+          "label": "GBVSR_Id_2M_Hitbox.png",
+          "filename": "GBVSR_Id_2M_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/09/GBVSR_Id_2M_Hitbox.png",
+          "mime": "image/png",
+          "size": "411304",
+          "sha1": "dc7713a7aecf87d7defa958479b405fd42265395",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2M_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2M.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2M_Hitbox.png"
+      ],
+      "aliases": [
+        "2m",
+        "2M"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "2H",
+        "Damage": "1300",
+        "Guard": "Mid",
+        "Startup": "11",
+        "Active": "6",
+        "Recovery": "23",
+        "On-Block": "-12",
+        "On-Hit": "-8",
+        "On Counter Hit": "±0",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/7/7a/GBVSR_Id_2H.png/180px-GBVSR_Id_2H.png",
+          "label": "GBVSR_Id_2H.png",
+          "filename": "GBVSR_Id_2H.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/7/7a/GBVSR_Id_2H.png",
+          "mime": "image/png",
+          "size": "715212",
+          "sha1": "ad03209536b4a0e69729cf88ca06f5423ad9d01f",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2H.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/37/GBVSR_Id_2H_Hitbox.png/180px-GBVSR_Id_2H_Hitbox.png",
+          "label": "GBVSR_Id_2H_Hitbox.png",
+          "filename": "GBVSR_Id_2H_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/37/GBVSR_Id_2H_Hitbox.png",
+          "mime": "image/png",
+          "size": "673059",
+          "sha1": "a353e7df65af01d162497a546f35275ad4af72fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2H_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2H.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2H_Hitbox.png"
+      ],
+      "aliases": [
+        "2h",
+        "2H"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "2U",
+        "Damage": "1000",
+        "Guard": "Low",
+        "Startup": "8",
+        "Active": "3",
+        "Recovery": "23",
+        "On-Block": "-11",
+        "On-Hit": "HKD +44",
+        "On Counter Hit": "HKD +48",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/99/GBVSR_Id_2U.png/180px-GBVSR_Id_2U.png",
+          "label": "GBVSR_Id_2U.png",
+          "filename": "GBVSR_Id_2U.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/99/GBVSR_Id_2U.png",
+          "mime": "image/png",
+          "size": "848246",
+          "sha1": "054ab79ad628edfdb3ee41c6f1792fa2048eb906",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2U.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/2/24/GBVSR_Id_2U_Hitbox.png/180px-GBVSR_Id_2U_Hitbox.png",
+          "label": "GBVSR_Id_2U_Hitbox.png",
+          "filename": "GBVSR_Id_2U_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/2/24/GBVSR_Id_2U_Hitbox.png",
+          "mime": "image/png",
+          "size": "793364",
+          "sha1": "f11ce9466818e2c34fdcd6e690a3c4fb67e4960f",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_2U_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2U.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_2U_Hitbox.png"
+      ],
+      "aliases": [
+        "2u",
+        "2U"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "66L",
+        "Damage": "600",
+        "Guard": "Mid",
+        "Startup": "8",
+        "Active": "3",
+        "Recovery": "10 [15]",
+        "On-Block": "+2",
+        "On-Hit": "+6",
+        "On Counter Hit": "+8",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "4.8",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/bd/GBVSR_Id_66L.png/180px-GBVSR_Id_66L.png",
+          "label": "GBVSR_Id_66L.png",
+          "filename": "GBVSR_Id_66L.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/bd/GBVSR_Id_66L.png",
+          "mime": "image/png",
+          "size": "522608",
+          "sha1": "dc088eabba22a7c6c63b62eb56dda63c1cce66c0",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_66L.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/9f/GBVSR_Id_66L_Hitbox.png/180px-GBVSR_Id_66L_Hitbox.png",
+          "label": "GBVSR_Id_66L_Hitbox.png",
+          "filename": "GBVSR_Id_66L_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/9f/GBVSR_Id_66L_Hitbox.png",
+          "mime": "image/png",
+          "size": "477732",
+          "sha1": "933ea771ba9fb8b050280d5f95560b653acb1bad",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_66L_Hitbox.png"
+        }
+      ],
+      "notes": "Data in [] denotes on whiff.;Clash Level: 1;Id cannot dash for 4 frames after recovery ends.;70% initial damage scaling only when used as a combo starter.;",
+      "notesZh": "[]括号内的数据为挥空的数据\n相杀等级为1\nId恢复结束后4帧内不能冲刺\n作为连段起手时有70%的起手修正",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_66L.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_66L_Hitbox.png"
+      ],
+      "aliases": [
+        "66l",
+        "66L"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "66M",
+        "Damage": "1100",
+        "Guard": "Low",
+        "Startup": "12",
+        "Active": "3",
+        "Recovery": "22",
+        "On-Block": "-8",
+        "On-Hit": "KD +24",
+        "On Counter Hit": "HKD +49",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_66M.png",
+          "filename": "GBVSR_Id_66M.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_66M_Hitbox.png",
+          "filename": "GBVSR_Id_66M_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "66m",
+        "66M"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "66H",
+        "Damage": "1200",
+        "Guard": "Mid",
+        "Startup": "15",
+        "Active": "6",
+        "Recovery": "21",
+        "On-Block": "-8",
+        "On-Hit": "+11 Force Crouch",
+        "On Counter Hit": "+15 Force Crouch",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/16/GBVSR_Id_66H.png/180px-GBVSR_Id_66H.png",
+          "label": "GBVSR_Id_66H.png",
+          "filename": "GBVSR_Id_66H.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/16/GBVSR_Id_66H.png",
+          "mime": "image/png",
+          "size": "626750",
+          "sha1": "1c37330b1e542fa055de845fe388fa218e9fed32",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_66H.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/cf/GBVSR_Id_66H_Hitbox.png/180px-GBVSR_Id_66H_Hitbox.png",
+          "label": "GBVSR_Id_66H_Hitbox.png",
+          "filename": "GBVSR_Id_66H_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/cf/GBVSR_Id_66H_Hitbox.png",
+          "mime": "image/png",
+          "size": "600391",
+          "sha1": "3edee0b07f10b46a7832355be68020cfeeb9ca06",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_66H_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_66H.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_66H_Hitbox.png"
+      ],
+      "aliases": [
+        "66h",
+        "66H"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "j.L",
+        "Damage": "600",
+        "Guard": "High/Air",
+        "Startup": "5",
+        "Active": "Until L",
+        "Recovery": "L+1",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "1",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/50/GBVSR_Id_jL.png/180px-GBVSR_Id_jL.png",
+          "label": "GBVSR_Id_jL.png",
+          "filename": "GBVSR_Id_jL.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/50/GBVSR_Id_jL.png",
+          "mime": "image/png",
+          "size": "298054",
+          "sha1": "35de833209b86658bf39b20e830942d1523e61d4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jL.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/6/65/GBVSR_Id_jL_Hitbox.png/180px-GBVSR_Id_jL_Hitbox.png",
+          "label": "GBVSR_Id_jL_Hitbox.png",
+          "filename": "GBVSR_Id_jL_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/6/65/GBVSR_Id_jL_Hitbox.png",
+          "mime": "image/png",
+          "size": "275962",
+          "sha1": "885e06a840f276f48d316c589ab39d562f6ecb39",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jL_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jL.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jL_Hitbox.png"
+      ],
+      "aliases": [
+        "jl",
+        "j.L"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "j.M",
+        "Damage": "800",
+        "Guard": "High/Air",
+        "Startup": "6 (5)",
+        "Active": "3",
+        "Recovery": "Until L+1",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/e/ee/GBVSR_Id_jM.png/180px-GBVSR_Id_jM.png",
+          "label": "GBVSR_Id_jM.png",
+          "filename": "GBVSR_Id_jM.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/e/ee/GBVSR_Id_jM.png",
+          "mime": "image/png",
+          "size": "547917",
+          "sha1": "0d62a60b72eec43b2d8be837ac03a8c44a5fe8cf",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jM.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/dd/GBVSR_Id_jM_Hitbox.png/180px-GBVSR_Id_jM_Hitbox.png",
+          "label": "GBVSR_Id_jM_Hitbox.png",
+          "filename": "GBVSR_Id_jM_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/dd/GBVSR_Id_jM_Hitbox.png",
+          "mime": "image/png",
+          "size": "533174",
+          "sha1": "da5e601c9835a55ee384ebc2d403fe92a1745a70",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jM_Hitbox.png"
+        }
+      ],
+      "notes": "Data in ( ) refers to j.MM .",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jM.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jM_Hitbox.png"
+      ],
+      "aliases": [
+        "jm",
+        "j.M"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "j.H",
+        "Damage": "1000",
+        "Guard": "High/Air",
+        "Startup": "7",
+        "Active": "6",
+        "Recovery": "Until L+1",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a4/GBVSR_Id_jH.png/180px-GBVSR_Id_jH.png",
+          "label": "GBVSR_Id_jH.png",
+          "filename": "GBVSR_Id_jH.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a4/GBVSR_Id_jH.png",
+          "mime": "image/png",
+          "size": "698685",
+          "sha1": "3152c113b7f57af2e63bbf9b22668c43d01e6c67",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jH.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/6/63/GBVSR_Id_jH_Hitbox_1.png/180px-GBVSR_Id_jH_Hitbox_1.png",
+          "label": "GBVSR_Id_jH_Hitbox_1.png",
+          "filename": "GBVSR_Id_jH_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/6/63/GBVSR_Id_jH_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "613760",
+          "sha1": "9ba18776de998560047fc1e7403fe3bc7b81e1ff",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jH_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/38/GBVSR_Id_jH_Hitbox_2.png/180px-GBVSR_Id_jH_Hitbox_2.png",
+          "label": "GBVSR_Id_jH_Hitbox_2.png",
+          "filename": "GBVSR_Id_jH_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/38/GBVSR_Id_jH_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "659793",
+          "sha1": "13d3cc6acd7c924fb10cf5cadf7f2f0c0a25844c",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jH_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jH.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jH_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_jH_Hitbox_2.png"
+      ],
+      "aliases": [
+        "jh",
+        "j.H"
+      ]
+    },
+    {
+      "section": "Normal Moves",
+      "row": {
+        "": "",
+        "Input": "j.U",
+        "Damage": "900",
+        "Guard": "High/Air",
+        "Startup": "9",
+        "Active": "6",
+        "Recovery": "Until L+1",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "2",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/05/GBVSR_Id_jU.png/180px-GBVSR_Id_jU.png",
+          "label": "GBVSR_Id_jU.png",
+          "filename": "GBVSR_Id_jU.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/05/GBVSR_Id_jU.png",
+          "mime": "image/png",
+          "size": "1624533",
+          "sha1": "e4e628b5f0560947f1ca9a9707772320ef29191d",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jU.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/d6/GBVSR_Id_jU_Hitbox.png/180px-GBVSR_Id_jU_Hitbox.png",
+          "label": "GBVSR_Id_jU_Hitbox.png",
+          "filename": "GBVSR_Id_jU_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/d6/GBVSR_Id_jU_Hitbox.png",
+          "mime": "image/png",
+          "size": "1557999",
+          "sha1": "9873a773b39993b2a0c8b2271d6af29dc4110133",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_jU_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jU.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_jU_Hitbox.png"
+      ],
+      "aliases": [
+        "ju",
+        "j.U"
+      ]
+    },
+    {
+      "section": "Unique Action",
+      "row": {
+        "": "",
+        "Input": "5U",
+        "Name": "Unique Action",
+        "Damage": "800",
+        "Guard": "Mid",
+        "Startup": "20~80",
+        "Active": "6",
+        "Recovery": "23",
+        "On-Block": "-5",
+        "On-Hit": "KD +24",
+        "On Counter Hit": "KD +32",
+        "Level": "",
+        "Invuln": "Armored 7-End of Actives",
+        "SBG Gain": "",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/4/40/GBVSR_Id_5U_1.png/180px-GBVSR_Id_5U_1.png",
+          "label": "GBVSR_Id_5U_1.png",
+          "filename": "GBVSR_Id_5U_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/4/40/GBVSR_Id_5U_1.png",
+          "mime": "image/png",
+          "size": "1084875",
+          "sha1": "bed856a74f7948dd5584457465d05c827a33d11e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_5U_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/09/GBVSR_Id_5U_2.png/180px-GBVSR_Id_5U_2.png",
+          "label": "GBVSR_Id_5U_2.png",
+          "filename": "GBVSR_Id_5U_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/09/GBVSR_Id_5U_2.png",
+          "mime": "image/png",
+          "size": "1553575",
+          "sha1": "39c3ac339d45cf3f4d25bedbff3fae386c7e91c7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_5U_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/17/GBVSR_Id_5U_1_Hitbox.png/180px-GBVSR_Id_5U_1_Hitbox.png",
+          "label": "GBVSR_Id_5U_1_Hitbox.png",
+          "filename": "GBVSR_Id_5U_1_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/17/GBVSR_Id_5U_1_Hitbox.png",
+          "mime": "image/png",
+          "size": "1058720",
+          "sha1": "b074b83cc52ad8f17fbf4fabfdf3b46f56c52230",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_5U_1_Hitbox.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/8f/GBVSR_Id_5U_2_Hitbox.png/180px-GBVSR_Id_5U_2_Hitbox.png",
+          "label": "GBVSR_Id_5U_2_Hitbox.png",
+          "filename": "GBVSR_Id_5U_2_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/8f/GBVSR_Id_5U_2_Hitbox.png",
+          "mime": "image/png",
+          "size": "1457712",
+          "sha1": "d2754fa5ec89a1d18100b9d63f1a96a38a3f77b9",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_5U_2_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_5U_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_5U_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_5U_1_Hitbox.png",
+        "data/gbvsr/images/Id/GBVSR_Id_5U_2_Hitbox.png"
+      ],
+      "aliases": [
+        "5u",
+        "5U"
+      ]
+    },
+    {
+      "section": "Other",
+      "row": {
+        "": "",
+        "Name": "L+U / L+M",
+        "Damage": "2500",
+        "Guard": "Throw",
+        "Startup": "4",
+        "Active": "3",
+        "Recovery": "26",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "0, 4",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "",
+        "Input": "Ground Throw"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/4/40/GBVSR_Id_Throw.png/180px-GBVSR_Id_Throw.png",
+          "label": "GBVSR_Id_Throw.png",
+          "filename": "GBVSR_Id_Throw.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/4/40/GBVSR_Id_Throw.png",
+          "mime": "image/png",
+          "size": "987213",
+          "sha1": "50beccf968d42042e852c219d2e90ab7aaf0a8ee",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_Throw.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a9/GBVSR_Id_Throw_Hitbox.png/180px-GBVSR_Id_Throw_Hitbox.png",
+          "label": "GBVSR_Id_Throw_Hitbox.png",
+          "filename": "GBVSR_Id_Throw_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a9/GBVSR_Id_Throw_Hitbox.png",
+          "mime": "image/png",
+          "size": "456432",
+          "sha1": "210a39d2afc31178b3d405ce77caaa57ec53183f",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_Throw_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_Throw.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_Throw_Hitbox.png"
+      ],
+      "aliases": [
+        "groundthrow",
+        "Ground Throw",
+        "投",
+        "地投",
+        "普通投",
+        "throw",
+        "gt",
+        "ab",
+        "ad",
+        "a+b",
+        "a+d",
+        "lu",
+        "lm",
+        "l+u",
+        "l+m",
+        "L+U",
+        "L+M"
+      ]
+    },
+    {
+      "section": "Other",
+      "row": {
+        "": "",
+        "Name": "j.L+U / j.L+M",
+        "Damage": "2500",
+        "Guard": "Airthrow",
+        "Startup": "5",
+        "Active": "5",
+        "Recovery": "Until L+6",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "0, 4",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "",
+        "Input": "Air Throw"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/0d/GBVSR_Id_AirThrow.png/180px-GBVSR_Id_AirThrow.png",
+          "label": "GBVSR_Id_AirThrow.png",
+          "filename": "GBVSR_Id_AirThrow.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/0d/GBVSR_Id_AirThrow.png",
+          "mime": "image/png",
+          "size": "863707",
+          "sha1": "74107e2da92eae568a7c6365f46b2008d10bc135",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_AirThrow.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/1e/GBVSR_Id_AirThrow_Hitbox.png/180px-GBVSR_Id_AirThrow_Hitbox.png",
+          "label": "GBVSR_Id_AirThrow_Hitbox.png",
+          "filename": "GBVSR_Id_AirThrow_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/1e/GBVSR_Id_AirThrow_Hitbox.png",
+          "mime": "image/png",
+          "size": "346008",
+          "sha1": "269202ac4cd74bd28dc14a8c31e92baadbb7dc16",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_AirThrow_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_AirThrow.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_AirThrow_Hitbox.png"
+      ],
+      "aliases": [
+        "airthrow",
+        "Air Throw",
+        "空投",
+        "空中投",
+        "at",
+        "jab",
+        "jad",
+        "j.a+b",
+        "j.a+d",
+        "jlu",
+        "jlm",
+        "j.l+u",
+        "j.l+m",
+        "j.L+U",
+        "jl+u",
+        "j.L+M",
+        "jl+m"
+      ]
+    },
+    {
+      "section": "Other",
+      "row": {
+        "": "",
+        "Name": "bc",
+        "Damage": "1500",
+        "Guard": "Guard Crush 45 [52]",
+        "Startup": "28 (1)",
+        "Active": "1",
+        "Recovery": "37",
+        "On-Block": "+8 Force Stand [ +15 Force Stand ]",
+        "On-Hit": "+15 Force Crouch (KD +40 )",
+        "On Counter Hit": "+15 Force Crouch",
+        "Level": "4",
+        "Invuln": "",
+        "SBG Gain": "0.0",
+        "Combo Limit Scaling": "1",
+        "Input": "Raging Strike"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/e/e3/GBVSR_Id_MH.png/180px-GBVSR_Id_MH.png",
+          "label": "GBVSR_Id_MH.png",
+          "filename": "GBVSR_Id_MH.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/e/e3/GBVSR_Id_MH.png",
+          "mime": "image/png",
+          "size": "1598459",
+          "sha1": "96700b40ff37d565ed58d9116a6efb7b14b3e8e8",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_MH.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a8/GBVSR_Id_MH_Hitbox.png/180px-GBVSR_Id_MH_Hitbox.png",
+          "label": "GBVSR_Id_MH_Hitbox.png",
+          "filename": "GBVSR_Id_MH_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a8/GBVSR_Id_MH_Hitbox.png",
+          "mime": "image/png",
+          "size": "1506771",
+          "sha1": "18cb63e2fd2e1ad8e688c94bc5d88deb1ee83149",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_MH_Hitbox.png"
+        }
+      ],
+      "notes": "Data in [] denotes when opponent has no Bravery Points left.;Data in () denotes when used mid-combo.;Clash Level: 6;Raging Strike cannot clash with other moves and will instead trade;Deals 1000 damage on block during Guard Crush.;",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_MH.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_MH_Hitbox.png"
+      ],
+      "aliases": [
+        "ragingstrike",
+        "Raging Strike",
+        "rs",
+        "红技",
+        "红",
+        "怒火强攻",
+        "bc",
+        "b+c",
+        "mh",
+        "m+h",
+        "M+H"
+      ]
+    },
+    {
+      "section": "Other",
+      "row": {
+        "": "",
+        "Name": "bc",
+        "Damage": "1000",
+        "Guard": "Mid",
+        "Startup": "13",
+        "Active": "5",
+        "Recovery": "17",
+        "On-Block": "",
+        "On-Hit": "+15 Force Crouch (HKD +63 )",
+        "On Counter Hit": "",
+        "Level": "4",
+        "Invuln": "",
+        "SBG Gain": "-25.0; 0",
+        "Combo Limit Scaling": "0",
+        "Input": "Raging Chain"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a9/GBVSR_Id_MH-MH.png/180px-GBVSR_Id_MH-MH.png",
+          "label": "GBVSR_Id_MH-MH.png",
+          "filename": "GBVSR_Id_MH-MH.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a9/GBVSR_Id_MH-MH.png",
+          "mime": "image/png",
+          "size": "1163792",
+          "sha1": "dde3d666972853637e3d5748dcc58d502887e5d7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_MH-MH.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/bb/GBVSR_Id_MH-MH_Hitbox.png/180px-GBVSR_Id_MH-MH_Hitbox.png",
+          "label": "GBVSR_Id_MH-MH_Hitbox.png",
+          "filename": "GBVSR_Id_MH-MH_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/bb/GBVSR_Id_MH-MH_Hitbox.png",
+          "mime": "image/png",
+          "size": "1089679",
+          "sha1": "a0049fa766550a6638ebfd4b7a716a9257c4c723",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_MH-MH_Hitbox.png"
+        }
+      ],
+      "notes": "Data in () denotes when used mid-combo.;Forces 50% damage scaling if not used after a raw Raging Strike starter and damage scaling isn't already lower (the next attack is scaled 40%).;",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_MH-MH.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_MH-MH_Hitbox.png"
+      ],
+      "aliases": [
+        "ragingchain",
+        "Raging Chain",
+        "rc",
+        "红连",
+        "怒火突袭",
+        "bc",
+        "b+c",
+        "mh",
+        "m+h",
+        "M+H"
+      ]
+    },
+    {
+      "section": "Other",
+      "row": {
+        "": "",
+        "Name": "",
+        "Damage": "500",
+        "Guard": "Mid",
+        "Startup": "13",
+        "Active": "5",
+        "Recovery": "17",
+        "On-Block": "+4",
+        "On-Hit": "HKD +60",
+        "On Counter Hit": "HKD +60",
+        "Level": "4",
+        "Invuln": "",
+        "SBG Gain": "-25.0; 0",
+        "Combo Limit Scaling": "0",
+        "Input": "Chain Attack"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a9/GBVSR_Id_MH-MH.png/180px-GBVSR_Id_MH-MH.png",
+          "label": "GBVSR_Id_MH-MH.png",
+          "filename": "GBVSR_Id_MH-MH.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a9/GBVSR_Id_MH-MH.png",
+          "mime": "image/png",
+          "size": "1163792",
+          "sha1": "dde3d666972853637e3d5748dcc58d502887e5d7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_MH-MH.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/bb/GBVSR_Id_MH-MH_Hitbox.png/180px-GBVSR_Id_MH-MH_Hitbox.png",
+          "label": "GBVSR_Id_MH-MH_Hitbox.png",
+          "filename": "GBVSR_Id_MH-MH_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/bb/GBVSR_Id_MH-MH_Hitbox.png",
+          "mime": "image/png",
+          "size": "1089679",
+          "sha1": "a0049fa766550a6638ebfd4b7a716a9257c4c723",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_MH-MH_Hitbox.png"
+        }
+      ],
+      "notes": "Chain Attack is only able to be input from c.XX 6M and c.XX 6H enders on a grounded opponent.;Forces 50% damage scaling (the next attack is scaled 40%).;",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_MH-MH.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_MH-MH_Hitbox.png"
+      ],
+      "aliases": [
+        "chainattack",
+        "Chain Attack"
+      ]
+    },
+    {
+      "section": "Other",
+      "row": {
+        "": "",
+        "Name": "bc（防御中）",
+        "Damage": "500",
+        "Guard": "Mid",
+        "Startup": "10 [18]",
+        "Active": "3 [2]",
+        "Recovery": "19 [35]",
+        "On-Block": "-2",
+        "On-Hit": "Air Tech +26 [ +5 ]",
+        "On Counter Hit": "Air Tech +26 [HKD +43 ]",
+        "Level": "4",
+        "Invuln": "1-20 Full [1-54 Full]",
+        "SBG Gain": "0.0",
+        "Combo Limit Scaling": "2",
+        "Input": "Brave Counter"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/0/03/GBVSR_Id_BC.png/180px-GBVSR_Id_BC.png",
+          "label": "GBVSR_Id_BC.png",
+          "filename": "GBVSR_Id_BC.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/0/03/GBVSR_Id_BC.png",
+          "mime": "image/png",
+          "size": "940248",
+          "sha1": "2547bd69822b2093c17b88774a3f5b8ada3488cc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_BC.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/81/GBVSR_Id_BC_Hitbox.png/180px-GBVSR_Id_BC_Hitbox.png",
+          "label": "GBVSR_Id_BC_Hitbox.png",
+          "filename": "GBVSR_Id_BC_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/81/GBVSR_Id_BC_Hitbox.png",
+          "mime": "image/png",
+          "size": "645751",
+          "sha1": "bc448eb671508bbe306158789c5aee3e86db6389",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_BC_Hitbox.png"
+        }
+      ],
+      "notes": "Data in [] denotes when countering a Raging Strike.;Clash Level: 50;Brave Counter becomes fully invincible for its entire duration if it contacts the opponent.;",
+      "notesZh": "[]括号内为被bc打中崩防后防反的数据\n相杀等级为50\n若英勇反击（爆豆）击中对手，那么招式期间全程无敌",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_BC.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_BC_Hitbox.png"
+      ],
+      "aliases": [
+        "bravecounter",
+        "Brave Counter",
+        "反击",
+        "英勇反击",
+        "勇气反击",
+        "bc",
+        "b+c",
+        "mh",
+        "m+h",
+        "M+H"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236L",
+        "Name": "L Reginleiv",
+        "Damage": "400,800 [400,1200]",
+        "Guard": "Mid/All",
+        "Startup": "13 (30)",
+        "Active": "3",
+        "Recovery": "Total 58",
+        "On-Block": "-6",
+        "On-Hit": "-2",
+        "On Counter Hit": "+10",
+        "Level": "2",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1,1"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_236X_1.png/180px-GBVSR_Id_236X_1.png",
+          "label": "GBVSR_Id_236X_1.png",
+          "filename": "GBVSR_Id_236X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_236X_1.png",
+          "mime": "image/png",
+          "size": "831434",
+          "sha1": "cbc701d6eef7087a3017d94cfff2f423e08638b7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/2/2f/GBVSR_Id_236X_2.png/180px-GBVSR_Id_236X_2.png",
+          "label": "GBVSR_Id_236X_2.png",
+          "filename": "GBVSR_Id_236X_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/2/2f/GBVSR_Id_236X_2.png",
+          "mime": "image/png",
+          "size": "1397662",
+          "sha1": "c692275f7b2c23abdf8efe8ab5ad30ef0d114216",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f9/GBVSR_Id_236X_1_Hitbox_1.png/180px-GBVSR_Id_236X_1_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f9/GBVSR_Id_236X_1_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "693275",
+          "sha1": "c86bc7dfd9a6b75e76c6c3fd79e97ee613ce57fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/18/GBVSR_Id_236X_1_Hitbox_2.png/180px-GBVSR_Id_236X_1_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/18/GBVSR_Id_236X_1_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "707028",
+          "sha1": "48ee4a984fff36ac8b70109bcb64c9e85d5be76e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/af/GBVSR_Id_236X_1_Hitbox_3.png/180px-GBVSR_Id_236X_1_Hitbox_3.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/af/GBVSR_Id_236X_1_Hitbox_3.png",
+          "mime": "image/png",
+          "size": "763846",
+          "sha1": "6bee79e95d7005f13c22687689c2bef436d6b476",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/89/GBVSR_Id_236X_2_Hitbox_1.png/180px-GBVSR_Id_236X_2_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_2_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_2_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/89/GBVSR_Id_236X_2_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1354271",
+          "sha1": "60fa69b70197e02e24d1c2f0d1ecb74ffe157266",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/bc/GBVSR_Id_236X_2_Hitbox_2.png/180px-GBVSR_Id_236X_2_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_2_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_2_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/bc/GBVSR_Id_236X_2_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "1272790",
+          "sha1": "751b1b829cadaab60c5e6e8b4af953bbc6baa8d5",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_2.png"
+      ],
+      "aliases": [
+        "236l",
+        "236L",
+        "26l"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236M",
+        "Name": "M Reginleiv",
+        "Damage": "600,800 [600,1200]",
+        "Guard": "Mid/All",
+        "Startup": "20 (37)",
+        "Active": "3",
+        "Recovery": "Total 65",
+        "On-Block": "-6",
+        "On-Hit": "-2",
+        "On Counter Hit": "+10",
+        "Level": "3",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1,1"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_236X_1.png/180px-GBVSR_Id_236X_1.png",
+          "label": "GBVSR_Id_236X_1.png",
+          "filename": "GBVSR_Id_236X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_236X_1.png",
+          "mime": "image/png",
+          "size": "831434",
+          "sha1": "cbc701d6eef7087a3017d94cfff2f423e08638b7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/2/2f/GBVSR_Id_236X_2.png/180px-GBVSR_Id_236X_2.png",
+          "label": "GBVSR_Id_236X_2.png",
+          "filename": "GBVSR_Id_236X_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/2/2f/GBVSR_Id_236X_2.png",
+          "mime": "image/png",
+          "size": "1397662",
+          "sha1": "c692275f7b2c23abdf8efe8ab5ad30ef0d114216",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f9/GBVSR_Id_236X_1_Hitbox_1.png/180px-GBVSR_Id_236X_1_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f9/GBVSR_Id_236X_1_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "693275",
+          "sha1": "c86bc7dfd9a6b75e76c6c3fd79e97ee613ce57fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/18/GBVSR_Id_236X_1_Hitbox_2.png/180px-GBVSR_Id_236X_1_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/18/GBVSR_Id_236X_1_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "707028",
+          "sha1": "48ee4a984fff36ac8b70109bcb64c9e85d5be76e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/af/GBVSR_Id_236X_1_Hitbox_3.png/180px-GBVSR_Id_236X_1_Hitbox_3.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/af/GBVSR_Id_236X_1_Hitbox_3.png",
+          "mime": "image/png",
+          "size": "763846",
+          "sha1": "6bee79e95d7005f13c22687689c2bef436d6b476",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/89/GBVSR_Id_236X_2_Hitbox_1.png/180px-GBVSR_Id_236X_2_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_2_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_2_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/89/GBVSR_Id_236X_2_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1354271",
+          "sha1": "60fa69b70197e02e24d1c2f0d1ecb74ffe157266",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/bc/GBVSR_Id_236X_2_Hitbox_2.png/180px-GBVSR_Id_236X_2_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_2_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_2_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/bc/GBVSR_Id_236X_2_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "1272790",
+          "sha1": "751b1b829cadaab60c5e6e8b4af953bbc6baa8d5",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_2.png"
+      ],
+      "aliases": [
+        "236m",
+        "236M",
+        "26m"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236H",
+        "Name": "H Reginleiv",
+        "Damage": "600,300×2,400 [600,1500]",
+        "Guard": "Mid/All",
+        "Startup": "15 (32)",
+        "Active": "3",
+        "Recovery": "Total 60",
+        "On-Block": "-2",
+        "On-Hit": "+2",
+        "On Counter Hit": "HKD +85",
+        "Level": "4",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1,1"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_236X_1.png/180px-GBVSR_Id_236X_1.png",
+          "label": "GBVSR_Id_236X_1.png",
+          "filename": "GBVSR_Id_236X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_236X_1.png",
+          "mime": "image/png",
+          "size": "831434",
+          "sha1": "cbc701d6eef7087a3017d94cfff2f423e08638b7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/2/2f/GBVSR_Id_236X_2.png/180px-GBVSR_Id_236X_2.png",
+          "label": "GBVSR_Id_236X_2.png",
+          "filename": "GBVSR_Id_236X_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/2/2f/GBVSR_Id_236X_2.png",
+          "mime": "image/png",
+          "size": "1397662",
+          "sha1": "c692275f7b2c23abdf8efe8ab5ad30ef0d114216",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f9/GBVSR_Id_236X_1_Hitbox_1.png/180px-GBVSR_Id_236X_1_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f9/GBVSR_Id_236X_1_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "693275",
+          "sha1": "c86bc7dfd9a6b75e76c6c3fd79e97ee613ce57fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/18/GBVSR_Id_236X_1_Hitbox_2.png/180px-GBVSR_Id_236X_1_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/18/GBVSR_Id_236X_1_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "707028",
+          "sha1": "48ee4a984fff36ac8b70109bcb64c9e85d5be76e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/af/GBVSR_Id_236X_1_Hitbox_3.png/180px-GBVSR_Id_236X_1_Hitbox_3.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/af/GBVSR_Id_236X_1_Hitbox_3.png",
+          "mime": "image/png",
+          "size": "763846",
+          "sha1": "6bee79e95d7005f13c22687689c2bef436d6b476",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/89/GBVSR_Id_236X_2_Hitbox_1.png/180px-GBVSR_Id_236X_2_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_2_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_2_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/89/GBVSR_Id_236X_2_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1354271",
+          "sha1": "60fa69b70197e02e24d1c2f0d1ecb74ffe157266",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/b/bc/GBVSR_Id_236X_2_Hitbox_2.png/180px-GBVSR_Id_236X_2_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_2_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_2_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/b/bc/GBVSR_Id_236X_2_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "1272790",
+          "sha1": "751b1b829cadaab60c5e6e8b4af953bbc6baa8d5",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Hitbox_2.png"
+      ],
+      "aliases": [
+        "236h",
+        "236H",
+        "26h"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236[L]",
+        "Name": "L Reginleiv: Recidive",
+        "Damage": "400,900 [400,1200]",
+        "Guard": "Mid/All",
+        "Startup": "13 (35)",
+        "Active": "3",
+        "Recovery": "Total 65",
+        "On-Block": "-6",
+        "On-Hit": "Air Recovery +27",
+        "On Counter Hit": "+10",
+        "Level": "2",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1,1"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_236X_1.png/180px-GBVSR_Id_236X_1.png",
+          "label": "GBVSR_Id_236X_1.png",
+          "filename": "GBVSR_Id_236X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_236X_1.png",
+          "mime": "image/png",
+          "size": "831434",
+          "sha1": "cbc701d6eef7087a3017d94cfff2f423e08638b7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/d6/GBVSR_Id_236X_2_Charged.png/180px-GBVSR_Id_236X_2_Charged.png",
+          "label": "GBVSR_Id_236X_2_Charged.png",
+          "filename": "GBVSR_Id_236X_2_Charged.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/d6/GBVSR_Id_236X_2_Charged.png",
+          "mime": "image/png",
+          "size": "1558231",
+          "sha1": "ea2640df4747600e79eb49d53c49813595b6fd5a",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f9/GBVSR_Id_236X_1_Hitbox_1.png/180px-GBVSR_Id_236X_1_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f9/GBVSR_Id_236X_1_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "693275",
+          "sha1": "c86bc7dfd9a6b75e76c6c3fd79e97ee613ce57fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/18/GBVSR_Id_236X_1_Hitbox_2.png/180px-GBVSR_Id_236X_1_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/18/GBVSR_Id_236X_1_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "707028",
+          "sha1": "48ee4a984fff36ac8b70109bcb64c9e85d5be76e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/af/GBVSR_Id_236X_1_Hitbox_3.png/180px-GBVSR_Id_236X_1_Hitbox_3.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/af/GBVSR_Id_236X_1_Hitbox_3.png",
+          "mime": "image/png",
+          "size": "763846",
+          "sha1": "6bee79e95d7005f13c22687689c2bef436d6b476",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/7/73/GBVSR_Id_236X_2_Charged_Hitbox.png/180px-GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "label": "GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "filename": "GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/7/73/GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "mime": "image/png",
+          "size": "1525361",
+          "sha1": "8184fa33d9fe2e9c4903e2b5b67a361d524745e9",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged_Hitbox.png"
+      ],
+      "aliases": [
+        "236",
+        "236[L]",
+        "26[l]",
+        "236[l]"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236[M]",
+        "Name": "M Reginleiv: Recidive",
+        "Damage": "600,900 [600,1200]",
+        "Guard": "Mid/All",
+        "Startup": "20 (42)",
+        "Active": "3",
+        "Recovery": "Total 72",
+        "On-Block": "-6",
+        "On-Hit": "KD +27",
+        "On Counter Hit": "+10",
+        "Level": "3",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1,1"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_236X_1.png/180px-GBVSR_Id_236X_1.png",
+          "label": "GBVSR_Id_236X_1.png",
+          "filename": "GBVSR_Id_236X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_236X_1.png",
+          "mime": "image/png",
+          "size": "831434",
+          "sha1": "cbc701d6eef7087a3017d94cfff2f423e08638b7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/d6/GBVSR_Id_236X_2_Charged.png/180px-GBVSR_Id_236X_2_Charged.png",
+          "label": "GBVSR_Id_236X_2_Charged.png",
+          "filename": "GBVSR_Id_236X_2_Charged.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/d6/GBVSR_Id_236X_2_Charged.png",
+          "mime": "image/png",
+          "size": "1558231",
+          "sha1": "ea2640df4747600e79eb49d53c49813595b6fd5a",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f9/GBVSR_Id_236X_1_Hitbox_1.png/180px-GBVSR_Id_236X_1_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f9/GBVSR_Id_236X_1_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "693275",
+          "sha1": "c86bc7dfd9a6b75e76c6c3fd79e97ee613ce57fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/18/GBVSR_Id_236X_1_Hitbox_2.png/180px-GBVSR_Id_236X_1_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/18/GBVSR_Id_236X_1_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "707028",
+          "sha1": "48ee4a984fff36ac8b70109bcb64c9e85d5be76e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/af/GBVSR_Id_236X_1_Hitbox_3.png/180px-GBVSR_Id_236X_1_Hitbox_3.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/af/GBVSR_Id_236X_1_Hitbox_3.png",
+          "mime": "image/png",
+          "size": "763846",
+          "sha1": "6bee79e95d7005f13c22687689c2bef436d6b476",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/7/73/GBVSR_Id_236X_2_Charged_Hitbox.png/180px-GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "label": "GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "filename": "GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/7/73/GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "mime": "image/png",
+          "size": "1525361",
+          "sha1": "8184fa33d9fe2e9c4903e2b5b67a361d524745e9",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged_Hitbox.png"
+      ],
+      "aliases": [
+        "236",
+        "236[M]",
+        "236[m]",
+        "26[m]"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236[H]",
+        "Name": "H Reginleiv: Recidive",
+        "Damage": "600,400×3 [600,1500]",
+        "Guard": "Mid/All",
+        "Startup": "15 (37)",
+        "Active": "3",
+        "Recovery": "Total 67",
+        "On-Block": "-2",
+        "On-Hit": "KD +41",
+        "On Counter Hit": "HKD +85",
+        "Level": "4",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1,1"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_236X_1.png/180px-GBVSR_Id_236X_1.png",
+          "label": "GBVSR_Id_236X_1.png",
+          "filename": "GBVSR_Id_236X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_236X_1.png",
+          "mime": "image/png",
+          "size": "831434",
+          "sha1": "cbc701d6eef7087a3017d94cfff2f423e08638b7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/d6/GBVSR_Id_236X_2_Charged.png/180px-GBVSR_Id_236X_2_Charged.png",
+          "label": "GBVSR_Id_236X_2_Charged.png",
+          "filename": "GBVSR_Id_236X_2_Charged.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/d6/GBVSR_Id_236X_2_Charged.png",
+          "mime": "image/png",
+          "size": "1558231",
+          "sha1": "ea2640df4747600e79eb49d53c49813595b6fd5a",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f9/GBVSR_Id_236X_1_Hitbox_1.png/180px-GBVSR_Id_236X_1_Hitbox_1.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f9/GBVSR_Id_236X_1_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "693275",
+          "sha1": "c86bc7dfd9a6b75e76c6c3fd79e97ee613ce57fc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/1/18/GBVSR_Id_236X_1_Hitbox_2.png/180px-GBVSR_Id_236X_1_Hitbox_2.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/1/18/GBVSR_Id_236X_1_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "707028",
+          "sha1": "48ee4a984fff36ac8b70109bcb64c9e85d5be76e",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/af/GBVSR_Id_236X_1_Hitbox_3.png/180px-GBVSR_Id_236X_1_Hitbox_3.png",
+          "label": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "filename": "GBVSR_Id_236X_1_Hitbox_3.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/af/GBVSR_Id_236X_1_Hitbox_3.png",
+          "mime": "image/png",
+          "size": "763846",
+          "sha1": "6bee79e95d7005f13c22687689c2bef436d6b476",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/7/73/GBVSR_Id_236X_2_Charged_Hitbox.png/180px-GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "label": "GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "filename": "GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/7/73/GBVSR_Id_236X_2_Charged_Hitbox.png",
+          "mime": "image/png",
+          "size": "1525361",
+          "sha1": "8184fa33d9fe2e9c4903e2b5b67a361d524745e9",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_2.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_1_Hitbox_3.png",
+        "data/gbvsr/images/Id/GBVSR_Id_236X_2_Charged_Hitbox.png"
+      ],
+      "aliases": [
+        "236",
+        "236[H]",
+        "26[h]",
+        "236[h]"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "214L",
+        "Name": "L Never Enough",
+        "Damage": "300×2",
+        "Guard": "Mid",
+        "Startup": "12",
+        "Active": "3(6)3",
+        "Recovery": "22",
+        "On-Block": "-4",
+        "On-Hit": "0",
+        "On Counter Hit": "KD +33",
+        "Level": "2",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/92/GBVSR_Id_214X_1.png/180px-GBVSR_Id_214X_1.png",
+          "label": "GBVSR_Id_214X_1.png",
+          "filename": "GBVSR_Id_214X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/92/GBVSR_Id_214X_1.png",
+          "mime": "image/png",
+          "size": "1176009",
+          "sha1": "89da4dfffa383ccc01f2afae238e8fc5d209e1c4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/fb/GBVSR_Id_214X_2.png/180px-GBVSR_Id_214X_2.png",
+          "label": "GBVSR_Id_214X_2.png",
+          "filename": "GBVSR_Id_214X_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/fb/GBVSR_Id_214X_2.png",
+          "mime": "image/png",
+          "size": "757774",
+          "sha1": "664f9f59d8eebaf9ea77e649a31a9bd632a03ea7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/e/e1/GBVSR_Id_214X_1_Hitbox.png/180px-GBVSR_Id_214X_1_Hitbox.png",
+          "label": "GBVSR_Id_214X_1_Hitbox.png",
+          "filename": "GBVSR_Id_214X_1_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/e/e1/GBVSR_Id_214X_1_Hitbox.png",
+          "mime": "image/png",
+          "size": "670976",
+          "sha1": "fb8407a84c71ee9dc72dc4a741fa347b0af787a4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_1_Hitbox.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/35/GBVSR_Id_214X_2_Hitbox.png/180px-GBVSR_Id_214X_2_Hitbox.png",
+          "label": "GBVSR_Id_214X_2_Hitbox.png",
+          "filename": "GBVSR_Id_214X_2_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/35/GBVSR_Id_214X_2_Hitbox.png",
+          "mime": "image/png",
+          "size": "711587",
+          "sha1": "c1d2d87a54f5126605eb4c56a555e34bc2665fd5",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_2_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214X_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_1_Hitbox.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214X_2_Hitbox.png"
+      ],
+      "aliases": [
+        "214l",
+        "214L",
+        "24l"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "214M",
+        "Name": "M Never Enough",
+        "Damage": "400×2",
+        "Guard": "Mid",
+        "Startup": "16~27",
+        "Active": "3(6)3",
+        "Recovery": "22",
+        "On-Block": "-4",
+        "On-Hit": "0",
+        "On Counter Hit": "KD +33",
+        "Level": "2",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/92/GBVSR_Id_214X_1.png/180px-GBVSR_Id_214X_1.png",
+          "label": "GBVSR_Id_214X_1.png",
+          "filename": "GBVSR_Id_214X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/92/GBVSR_Id_214X_1.png",
+          "mime": "image/png",
+          "size": "1176009",
+          "sha1": "89da4dfffa383ccc01f2afae238e8fc5d209e1c4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/fb/GBVSR_Id_214X_2.png/180px-GBVSR_Id_214X_2.png",
+          "label": "GBVSR_Id_214X_2.png",
+          "filename": "GBVSR_Id_214X_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/fb/GBVSR_Id_214X_2.png",
+          "mime": "image/png",
+          "size": "757774",
+          "sha1": "664f9f59d8eebaf9ea77e649a31a9bd632a03ea7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/e/e1/GBVSR_Id_214X_1_Hitbox.png/180px-GBVSR_Id_214X_1_Hitbox.png",
+          "label": "GBVSR_Id_214X_1_Hitbox.png",
+          "filename": "GBVSR_Id_214X_1_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/e/e1/GBVSR_Id_214X_1_Hitbox.png",
+          "mime": "image/png",
+          "size": "670976",
+          "sha1": "fb8407a84c71ee9dc72dc4a741fa347b0af787a4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_1_Hitbox.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/35/GBVSR_Id_214X_2_Hitbox.png/180px-GBVSR_Id_214X_2_Hitbox.png",
+          "label": "GBVSR_Id_214X_2_Hitbox.png",
+          "filename": "GBVSR_Id_214X_2_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/35/GBVSR_Id_214X_2_Hitbox.png",
+          "mime": "image/png",
+          "size": "711587",
+          "sha1": "c1d2d87a54f5126605eb4c56a555e34bc2665fd5",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_2_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214X_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_1_Hitbox.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214X_2_Hitbox.png"
+      ],
+      "aliases": [
+        "214m",
+        "214M",
+        "24m"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "214H",
+        "Name": "H Never Enough",
+        "Damage": "500×2",
+        "Guard": "Mid",
+        "Startup": "14~25",
+        "Active": "3(6)3",
+        "Recovery": "22",
+        "On-Block": "-4",
+        "On-Hit": "0",
+        "On Counter Hit": "KD +33",
+        "Level": "3",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/92/GBVSR_Id_214X_1.png/180px-GBVSR_Id_214X_1.png",
+          "label": "GBVSR_Id_214X_1.png",
+          "filename": "GBVSR_Id_214X_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/92/GBVSR_Id_214X_1.png",
+          "mime": "image/png",
+          "size": "1176009",
+          "sha1": "89da4dfffa383ccc01f2afae238e8fc5d209e1c4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/fb/GBVSR_Id_214X_2.png/180px-GBVSR_Id_214X_2.png",
+          "label": "GBVSR_Id_214X_2.png",
+          "filename": "GBVSR_Id_214X_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/fb/GBVSR_Id_214X_2.png",
+          "mime": "image/png",
+          "size": "757774",
+          "sha1": "664f9f59d8eebaf9ea77e649a31a9bd632a03ea7",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/e/e1/GBVSR_Id_214X_1_Hitbox.png/180px-GBVSR_Id_214X_1_Hitbox.png",
+          "label": "GBVSR_Id_214X_1_Hitbox.png",
+          "filename": "GBVSR_Id_214X_1_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/e/e1/GBVSR_Id_214X_1_Hitbox.png",
+          "mime": "image/png",
+          "size": "670976",
+          "sha1": "fb8407a84c71ee9dc72dc4a741fa347b0af787a4",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_1_Hitbox.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/35/GBVSR_Id_214X_2_Hitbox.png/180px-GBVSR_Id_214X_2_Hitbox.png",
+          "label": "GBVSR_Id_214X_2_Hitbox.png",
+          "filename": "GBVSR_Id_214X_2_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/35/GBVSR_Id_214X_2_Hitbox.png",
+          "mime": "image/png",
+          "size": "711587",
+          "sha1": "c1d2d87a54f5126605eb4c56a555e34bc2665fd5",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_2_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214X_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_1_Hitbox.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214X_2_Hitbox.png"
+      ],
+      "aliases": [
+        "214h",
+        "214H",
+        "24h"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "214X~214X",
+        "Name": "Additional Strike",
+        "Damage": "800/1000/1600",
+        "Guard": "Mid",
+        "Startup": "12",
+        "Active": "4",
+        "Recovery": "23",
+        "On-Block": "-8",
+        "On-Hit": "Air Recovery +20",
+        "On Counter Hit": "KD +36",
+        "Level": "",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/8/8b/GBVSR_Id_214X_214X.png/180px-GBVSR_Id_214X_214X.png",
+          "label": "GBVSR_Id_214X_214X.png",
+          "filename": "GBVSR_Id_214X_214X.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/8/8b/GBVSR_Id_214X_214X.png",
+          "mime": "image/png",
+          "size": "641568",
+          "sha1": "81f1e8edfd70aad2152db88128f920fd9bbe8921",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_214X.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/94/GBVSR_Id_214X_214X_Hitbox.png/180px-GBVSR_Id_214X_214X_Hitbox.png",
+          "label": "GBVSR_Id_214X_214X_Hitbox.png",
+          "filename": "GBVSR_Id_214X_214X_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/94/GBVSR_Id_214X_214X_Hitbox.png",
+          "mime": "image/png",
+          "size": "573147",
+          "sha1": "2b8eed09daa3c1d776c9e781bad664ecef454320",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_214X_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_214X.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_214X_Hitbox.png"
+      ],
+      "aliases": [
+        "214x~214x",
+        "214X~214X",
+        "24x~214x"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "214X~623X",
+        "Name": "Launching Strike",
+        "Damage": "400/600/1000",
+        "Guard": "Mid",
+        "Startup": "23",
+        "Active": "1",
+        "Recovery": "13",
+        "On-Block": "-10",
+        "On-Hit": "KD +10",
+        "On Counter Hit": "KD +20",
+        "Level": "",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/55/GBVSR_Id_214X_623X.png/180px-GBVSR_Id_214X_623X.png",
+          "label": "GBVSR_Id_214X_623X.png",
+          "filename": "GBVSR_Id_214X_623X.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/55/GBVSR_Id_214X_623X.png",
+          "mime": "image/png",
+          "size": "609639",
+          "sha1": "e82b6fe37268b9efc9eab5566ccd1d93082ac008",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_623X.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/4/47/GBVSR_Id_214X_623X_Hitbox.png/180px-GBVSR_Id_214X_623X_Hitbox.png",
+          "label": "GBVSR_Id_214X_623X_Hitbox.png",
+          "filename": "GBVSR_Id_214X_623X_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/4/47/GBVSR_Id_214X_623X_Hitbox.png",
+          "mime": "image/png",
+          "size": "563883",
+          "sha1": "65ac83190067d4c9ee649025b0ac5c88c8c1f920",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214X_623X_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_623X.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214X_623X_Hitbox.png"
+      ],
+      "aliases": [
+        "214x~623x",
+        "214X~623X",
+        "24x~623x"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "623L",
+        "Name": "L Atonement",
+        "Damage": "1000",
+        "Guard": "All",
+        "Startup": "6",
+        "Active": "6",
+        "Recovery": "31",
+        "On-Block": "-20",
+        "On-Hit": "KD +26",
+        "On Counter Hit": "KD +26",
+        "Level": "",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f4/GBVSR_Id_623X.png/180px-GBVSR_Id_623X.png",
+          "label": "GBVSR_Id_623X.png",
+          "filename": "GBVSR_Id_623X.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f4/GBVSR_Id_623X.png",
+          "mime": "image/png",
+          "size": "1650522",
+          "sha1": "bec472f8f68fe9061939e2d959aa524707edc485",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623X.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/d/dc/GBVSR_Id_623L_Hitbox_1.png/180px-GBVSR_Id_623L_Hitbox_1.png",
+          "label": "GBVSR_Id_623L_Hitbox_1.png",
+          "filename": "GBVSR_Id_623L_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/d/dc/GBVSR_Id_623L_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1066106",
+          "sha1": "893b4894bb3815fa398998431be049545b1698fb",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623L_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/c7/GBVSR_Id_623L_Hitbox_2.png/180px-GBVSR_Id_623L_Hitbox_2.png",
+          "label": "GBVSR_Id_623L_Hitbox_2.png",
+          "filename": "GBVSR_Id_623L_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/c7/GBVSR_Id_623L_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "1533037",
+          "sha1": "b3cd80a5caf18dbd883c786756d5793503a6fb21",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623L_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_623X.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_623L_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_623L_Hitbox_2.png"
+      ],
+      "aliases": [
+        "623l",
+        "623L"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "623M",
+        "Name": "M Atonement",
+        "Damage": "1100",
+        "Guard": "Mid",
+        "Startup": "9",
+        "Active": "6",
+        "Recovery": "38",
+        "On-Block": "-25",
+        "On-Hit": "Air Recovery +15",
+        "On Counter Hit": "Air Recovery +15",
+        "Level": "",
+        "Invuln": "1-14 All",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f4/GBVSR_Id_623X.png/180px-GBVSR_Id_623X.png",
+          "label": "GBVSR_Id_623X.png",
+          "filename": "GBVSR_Id_623X.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f4/GBVSR_Id_623X.png",
+          "mime": "image/png",
+          "size": "1650522",
+          "sha1": "bec472f8f68fe9061939e2d959aa524707edc485",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623X.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/33/GBVSR_Id_623M_Hitbox_1.png/180px-GBVSR_Id_623M_Hitbox_1.png",
+          "label": "GBVSR_Id_623M_Hitbox_1.png",
+          "filename": "GBVSR_Id_623M_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/33/GBVSR_Id_623M_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1066786",
+          "sha1": "cbf75866a951f7db9bab268f2c67e8eddf20d2d1",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f4/GBVSR_Id_623M_Hitbox_2.png/180px-GBVSR_Id_623M_Hitbox_2.png",
+          "label": "GBVSR_Id_623M_Hitbox_2.png",
+          "filename": "GBVSR_Id_623M_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f4/GBVSR_Id_623M_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "1564672",
+          "sha1": "13c844e7b3439116cdeb3b6fe93deb3d45c00935",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_623X.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_2.png"
+      ],
+      "aliases": [
+        "623m",
+        "623M"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "623H",
+        "Name": "H Atonement",
+        "Damage": "1500",
+        "Guard": "Mid",
+        "Startup": "11",
+        "Active": "6",
+        "Recovery": "35",
+        "On-Block": "-22",
+        "On-Hit": "KD +28",
+        "On Counter Hit": "KD +28",
+        "Level": "",
+        "Invuln": "1-16 All",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "3"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f4/GBVSR_Id_623X.png/180px-GBVSR_Id_623X.png",
+          "label": "GBVSR_Id_623X.png",
+          "filename": "GBVSR_Id_623X.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f4/GBVSR_Id_623X.png",
+          "mime": "image/png",
+          "size": "1650522",
+          "sha1": "bec472f8f68fe9061939e2d959aa524707edc485",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623X.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/3/33/GBVSR_Id_623M_Hitbox_1.png/180px-GBVSR_Id_623M_Hitbox_1.png",
+          "label": "GBVSR_Id_623M_Hitbox_1.png",
+          "filename": "GBVSR_Id_623M_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/3/33/GBVSR_Id_623M_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1066786",
+          "sha1": "cbf75866a951f7db9bab268f2c67e8eddf20d2d1",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/f/f4/GBVSR_Id_623M_Hitbox_2.png/180px-GBVSR_Id_623M_Hitbox_2.png",
+          "label": "GBVSR_Id_623M_Hitbox_2.png",
+          "filename": "GBVSR_Id_623M_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/f/f4/GBVSR_Id_623M_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "1564672",
+          "sha1": "13c844e7b3439116cdeb3b6fe93deb3d45c00935",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_623X.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_623M_Hitbox_2.png"
+      ],
+      "aliases": [
+        "623h",
+        "623H"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "22L",
+        "Name": "L Scourge",
+        "Damage": "1400",
+        "Guard": "Mid",
+        "Startup": "17",
+        "Active": "6",
+        "Recovery": "25",
+        "On-Block": "-8",
+        "On-Hit": "Air Recovery +19",
+        "On Counter Hit": "Air Recovery +19",
+        "Level": "4",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/9/92/GBVSR_Id_22L.png/180px-GBVSR_Id_22L.png",
+          "label": "GBVSR_Id_22L.png",
+          "filename": "GBVSR_Id_22L.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/9/92/GBVSR_Id_22L.png",
+          "mime": "image/png",
+          "size": "974125",
+          "sha1": "017215580a4124e9fb90301ac2541215c8a1278f",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_22L.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/2/24/GBVSR_Id_22L_Hitbox.png/180px-GBVSR_Id_22L_Hitbox.png",
+          "label": "GBVSR_Id_22L_Hitbox.png",
+          "filename": "GBVSR_Id_22L_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/2/24/GBVSR_Id_22L_Hitbox.png",
+          "mime": "image/png",
+          "size": "921877",
+          "sha1": "9842d71604ffe7e5c13da2446c61eb366849d363",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_22L_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_22L.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_22L_Hitbox.png"
+      ],
+      "aliases": [
+        "22l",
+        "22L"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "22M",
+        "Name": "M Scourge",
+        "Damage": "1600",
+        "Guard": "Low",
+        "Startup": "21",
+        "Active": "6",
+        "Recovery": "25",
+        "On-Block": "-8",
+        "On-Hit": "KD +31",
+        "On Counter Hit": "KD +43",
+        "Level": "4",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a5/GBVSR_Id_22M.png/180px-GBVSR_Id_22M.png",
+          "label": "GBVSR_Id_22M.png",
+          "filename": "GBVSR_Id_22M.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a5/GBVSR_Id_22M.png",
+          "mime": "image/png",
+          "size": "1079520",
+          "sha1": "257ed555049bfe562c9de83e0ca2c2de9e2a4f26",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_22M.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/6/63/GBVSR_Id_22M_Hitbox.png/180px-GBVSR_Id_22M_Hitbox.png",
+          "label": "GBVSR_Id_22M_Hitbox.png",
+          "filename": "GBVSR_Id_22M_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/6/63/GBVSR_Id_22M_Hitbox.png",
+          "mime": "image/png",
+          "size": "1006744",
+          "sha1": "7fd993dd9aacc9512a26074e8185180f5a98a2d6",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_22M_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_22M.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_22M_Hitbox.png"
+      ],
+      "aliases": [
+        "22m",
+        "22M"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "22H",
+        "Name": "H Scourge",
+        "Damage": "2000",
+        "Guard": "Low",
+        "Startup": "19",
+        "Active": "6",
+        "Recovery": "23",
+        "On-Block": "-6",
+        "On-Hit": "KD +39",
+        "On Counter Hit": "KD +47",
+        "Level": "4",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/a5/GBVSR_Id_22M.png/180px-GBVSR_Id_22M.png",
+          "label": "GBVSR_Id_22M.png",
+          "filename": "GBVSR_Id_22M.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/a5/GBVSR_Id_22M.png",
+          "mime": "image/png",
+          "size": "1079520",
+          "sha1": "257ed555049bfe562c9de83e0ca2c2de9e2a4f26",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_22M.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/6/63/GBVSR_Id_22M_Hitbox.png/180px-GBVSR_Id_22M_Hitbox.png",
+          "label": "GBVSR_Id_22M_Hitbox.png",
+          "filename": "GBVSR_Id_22M_Hitbox.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/6/63/GBVSR_Id_22M_Hitbox.png",
+          "mime": "image/png",
+          "size": "1006744",
+          "sha1": "7fd993dd9aacc9512a26074e8185180f5a98a2d6",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_22M_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_22M.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_22M_Hitbox.png"
+      ],
+      "aliases": [
+        "22h",
+        "22H"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "236U",
+        "Name": "Ultimate Reginleiv",
+        "Damage": "1600,800",
+        "Guard": "Mid/All",
+        "Startup": "13",
+        "Active": "",
+        "Recovery": "Total 36",
+        "On-Block": "-6",
+        "On-Hit": "+10",
+        "On Counter Hit": "+10",
+        "Level": "",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "-50.0; 25.0",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_236U.png",
+          "filename": "GBVSR_Id_236U.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_236U_Hitbox_1.png",
+          "filename": "GBVSR_Id_236U_Hitbox_1.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_236U_Hitbox_2.png",
+          "filename": "GBVSR_Id_236U_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "236u",
+        "236U",
+        "26u"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "214U",
+        "Name": "Ultimate Never Enough",
+        "Damage": "500×2,1000,500×2",
+        "Guard": "Mid",
+        "Startup": "11~23",
+        "Active": "3(6)3",
+        "Recovery": "20",
+        "On-Block": "-4",
+        "On-Hit": "HKD +54",
+        "On Counter Hit": "HKD +54",
+        "Level": "",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "-50.0; 25.0",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_1.png",
+          "filename": "GBVSR_Id_214U_1.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_2.png",
+          "filename": "GBVSR_Id_214U_2.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_3.png",
+          "filename": "GBVSR_Id_214U_3.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_4.png",
+          "filename": "GBVSR_Id_214U_4.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_Hitbox_1.png",
+          "filename": "GBVSR_Id_214U_Hitbox_1.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_Hitbox_2.png",
+          "filename": "GBVSR_Id_214U_Hitbox_2.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_Hitbox_3.png",
+          "filename": "GBVSR_Id_214U_Hitbox_3.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_214U_Hitbox_4.png",
+          "filename": "GBVSR_Id_214U_Hitbox_4.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "214u",
+        "214U",
+        "24u"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "623U",
+        "Name": "Ultimate Atonement",
+        "Damage": "1000,200×5",
+        "Guard": "Mid",
+        "Startup": "5",
+        "Active": "3",
+        "Recovery": "29",
+        "On-Block": "-26",
+        "On-Hit": "HKD +44",
+        "On Counter Hit": "HKD +44",
+        "Level": "",
+        "Invuln": "1-7 All",
+        "Cooldown": "",
+        "SBG Gain": "-50.0",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_623U.png",
+          "filename": "GBVSR_Id_623U.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_623U_Hitbox_1.png",
+          "filename": "GBVSR_Id_623U_Hitbox_1.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_623U_Hitbox_2.png",
+          "filename": "GBVSR_Id_623U_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "623u",
+        "623U"
+      ]
+    },
+    {
+      "section": "Skills",
+      "row": {
+        "": "",
+        "Input": "22U",
+        "Name": "Ultimate Scourge",
+        "Damage": "2500",
+        "Guard": "Mid",
+        "Startup": "17",
+        "Active": "6",
+        "Recovery": "23",
+        "On-Block": "-6",
+        "On-Hit": "HKD +60",
+        "On Counter Hit": "HKD +60",
+        "Level": "",
+        "Invuln": "",
+        "Cooldown": "",
+        "SBG Gain": "-50.0; 25.0",
+        "Combo Limit Scaling": ""
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_22U.png",
+          "filename": "GBVSR_Id_22U.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_22U_Hitbox_1.png",
+          "filename": "GBVSR_Id_22U_Hitbox_1.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_22U_Hitbox_2.png",
+          "filename": "GBVSR_Id_22U_Hitbox_2.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "22u",
+        "22U"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "236236H",
+        "Name": "Dead Weight",
+        "Damage": "4500(3500)",
+        "Guard": "Mid",
+        "Startup": "14",
+        "Active": "6",
+        "Recovery": "46",
+        "On-Block": "-33",
+        "On-Hit": "HKD +55",
+        "On Counter Hit": "HKD +55",
+        "Level": "",
+        "Invuln": "1-19 All",
+        "SBG Gain": "-100.0",
+        "Combo Limit Scaling": "0"
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_236236H.png",
+          "filename": "GBVSR_Id_236236H.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_236236H.png",
+          "filename": "GBVSR_Id_DF_236236H.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_236236H_Hitbox.png",
+          "filename": "GBVSR_Id_236236H_Hitbox.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_236236H_Hitbox.png",
+          "filename": "GBVSR_Id_DF_236236H_Hitbox.png"
+        }
+      ],
+      "notes": "can be done during Dragonform",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "236236h",
+        "236236H",
+        "26236h",
+        "2626h"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "214214H",
+        "Name": "Ragnarok Form",
+        "Damage": "",
+        "Guard": "Mid",
+        "Startup": "20",
+        "Active": "6",
+        "Recovery": "28(22)",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "",
+        "Invuln": "19 All/Super Armor 20~53",
+        "SBG Gain": "-100.0",
+        "Combo Limit Scaling": "0"
+      },
+      "images": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/5f/GBVSR_Id_214214H.png/180px-GBVSR_Id_214214H.png",
+          "label": "GBVSR_Id_214214H.png",
+          "filename": "GBVSR_Id_214214H.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/5f/GBVSR_Id_214214H.png",
+          "mime": "image/png",
+          "size": "1121436",
+          "sha1": "c36a90aa333aa016f5298749ce820aac58a2a1b9",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214214H.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/a/ae/GBVSR_Id_214214H_2.png/180px-GBVSR_Id_214214H_2.png",
+          "label": "GBVSR_Id_214214H_2.png",
+          "filename": "GBVSR_Id_214214H_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/a/ae/GBVSR_Id_214214H_2.png",
+          "mime": "image/png",
+          "size": "2739027",
+          "sha1": "eba4d1f8beea348c1fdb16a82be070e5c14aa862",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214214H_2.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/5/53/GBVSR_Id_214214H_Hitbox_1.png/180px-GBVSR_Id_214214H_Hitbox_1.png",
+          "label": "GBVSR_Id_214214H_Hitbox_1.png",
+          "filename": "GBVSR_Id_214214H_Hitbox_1.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/5/53/GBVSR_Id_214214H_Hitbox_1.png",
+          "mime": "image/png",
+          "size": "1116516",
+          "sha1": "fb2a48dbad4d2c2ec3971f18a2e282a55cdc011b",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214214H_Hitbox_1.png"
+        },
+        {
+          "url": "https://www.dustloop.com/wiki/images/thumb/c/c1/GBVSR_Id_214214H_Hitbox_2.png/180px-GBVSR_Id_214214H_Hitbox_2.png",
+          "label": "GBVSR_Id_214214H_Hitbox_2.png",
+          "filename": "GBVSR_Id_214214H_Hitbox_2.png",
+          "originalUrl": "https://www.dustloop.com/wiki/images/c/c1/GBVSR_Id_214214H_Hitbox_2.png",
+          "mime": "image/png",
+          "size": "2583039",
+          "sha1": "7a52bf2cf5ebeaff6b88833f3511d3f8f4a8bfdc",
+          "localPath": "data/gbvsr/images/Id/GBVSR_Id_214214H_Hitbox_2.png"
+        }
+      ],
+      "notes": "*Duration of Dragonform is determined by how much Versalis guage is charged. *Has permanent super armor during the install state and takes no chip damage when blocking. Upon getting hit reduces the timer by x amount. *If hit by an attack that would deplete the guage entirely, is put into a vulnerable state where Id can be hit.",
+      "notesZh": "“龙人化”状态的持续时间取决于神威槽的积攒量。*在变身期间拥有永久霸体，且防御时不承受削血伤害；受到攻击时，神威槽会减少，即缩短一定持续时间。*若受到足以耗尽神威槽的攻击，将进入易受攻击状态，此时本体（Id）可被击中。",
+      "imagePaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214214H.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214214H_2.png"
+      ],
+      "hitboxPaths": [
+        "data/gbvsr/images/Id/GBVSR_Id_214214H_Hitbox_1.png",
+        "data/gbvsr/images/Id/GBVSR_Id_214214H_Hitbox_2.png"
+      ],
+      "aliases": [
+        "214214h",
+        "214214H",
+        "2424h",
+        "24214h"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "df.L",
+        "Name": "Craving Slash",
+        "Damage": "400×2",
+        "Guard": "All",
+        "Startup": "13",
+        "Active": "4(8)4",
+        "Recovery": "25",
+        "On-Block": "-10",
+        "On-Hit": "0",
+        "On Counter Hit": "0",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [],
+      "hitboxes": [],
+      "notes": "can be canceled into itself",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "dfl",
+        "df.L"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "df.M",
+        "Name": "Reginleiv Barrage",
+        "Damage": "500×2",
+        "Guard": "All",
+        "Startup": "19",
+        "Active": "",
+        "Recovery": "Total 59",
+        "On-Block": "-8",
+        "On-Hit": "0",
+        "On Counter Hit": "0",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [],
+      "hitboxes": [],
+      "notes": "can be mashed to throw more fireballs",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "dfm",
+        "df.M"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "df.H",
+        "Name": "Versa Break",
+        "Damage": "1500",
+        "Guard": "All",
+        "Startup": "22",
+        "Active": "8",
+        "Recovery": "28",
+        "On-Block": "-3",
+        "On-Hit": "KD +40",
+        "On Counter Hit": "KD +40",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [],
+      "hitboxes": [],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "dfh",
+        "df.H"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "df.U",
+        "Name": "Savage Claw",
+        "Damage": "1500",
+        "Guard": "All",
+        "Startup": "33",
+        "Active": "13",
+        "Recovery": "25",
+        "On-Block": "",
+        "On-Hit": "",
+        "On Counter Hit": "",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "2"
+      },
+      "images": [],
+      "hitboxes": [],
+      "notes": "can be steered with a 4/6 input",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "dfu",
+        "df.U"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "df.5S",
+        "Name": "Soul Ray",
+        "Damage": "200×7-23",
+        "Guard": "All",
+        "Startup": "27",
+        "Active": "",
+        "Recovery": "Total 66~98",
+        "On-Block": "+1",
+        "On-Hit": "KD +23",
+        "On Counter Hit": "KD +23",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "1"
+      },
+      "images": [],
+      "hitboxes": [],
+      "notes": "does not have a proper motion input, is specifically done with 5S",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "df5s",
+        "df.5S"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "df.LU",
+        "Name": "Unbound Slam",
+        "Damage": "2500",
+        "Guard": "Throw",
+        "Startup": "25",
+        "Active": "4",
+        "Recovery": "30",
+        "On-Block": "",
+        "On-Hit": "HKD +57",
+        "On Counter Hit": "",
+        "Level": "",
+        "Invuln": "",
+        "SBG Gain": "",
+        "Combo Limit Scaling": "0"
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_Throw.png",
+          "filename": "GBVSR_Id_DF_Throw.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_Throw_Hitbox.png",
+          "filename": "GBVSR_Id_DF_Throw_Hitbox.png"
+        }
+      ],
+      "notes": "",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "dflu",
+        "df.LU"
+      ]
+    },
+    {
+      "section": "Skybound Arts",
+      "row": {
+        "": "",
+        "Input": "236236U",
+        "Name": "Godmight",
+        "Damage": "6000",
+        "Guard": "Mid",
+        "Startup": "14",
+        "Active": "4",
+        "Recovery": "34",
+        "On-Block": "-19",
+        "On-Hit": "HKD +44",
+        "On Counter Hit": "HKD +44",
+        "Level": "",
+        "Invuln": "1-17 All",
+        "SBG Gain": "-100.0",
+        "Combo Limit Scaling": "0"
+      },
+      "images": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_236236U_Start.png",
+          "filename": "GBVSR_Id_236236U_Start.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_236236U.png",
+          "filename": "GBVSR_Id_236236U.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_236236U_Start.png",
+          "filename": "GBVSR_Id_DF_236236U_Start.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_236236U.png",
+          "filename": "GBVSR_Id_DF_236236U.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_236236U_Finish.png",
+          "filename": "GBVSR_Id_236236U_Finish.png"
+        }
+      ],
+      "hitboxes": [
+        {
+          "url": "",
+          "label": "GBVSR_Id_236236U_Hitbox.png",
+          "filename": "GBVSR_Id_236236U_Hitbox.png"
+        },
+        {
+          "url": "",
+          "label": "GBVSR_Id_DF_236236U_Hitbox.png",
+          "filename": "GBVSR_Id_DF_236236U_Hitbox.png"
+        }
+      ],
+      "notes": "can be done during Dragonform",
+      "notesZh": "",
+      "imagePaths": [],
+      "hitboxPaths": [],
+      "aliases": [
+        "236236u",
+        "236236U",
+        "26236u",
+        "2626u"
+      ]
+    }
+  ]
+}

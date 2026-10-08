@@ -37,12 +37,6 @@ _minio = Minio(
 )
 BG_BUCKET = "sign-bg"
 
-try:
-    if not _minio.bucket_exists(BG_BUCKET):
-        _minio.make_bucket(BG_BUCKET)
-except Exception as e:
-    logger.warning(f"[sign_in] MinIO bucket检查失败: {e}")
-
 # ---------- 字体 ----------
 # 优先使用衬线/粗体字体以获得艺术感
 _FONT_CANDIDATES = [
@@ -102,6 +96,11 @@ from nonebot import get_driver
 async def _create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    import asyncio
+    def ensure_bucket():
+        if not _minio.bucket_exists(BG_BUCKET):
+            _minio.make_bucket(BG_BUCKET)
+    await asyncio.to_thread(ensure_bucket)
     logger.info("[sign_in] 数据表已就绪")
 
 
@@ -109,8 +108,7 @@ async def _create_tables():
 sign_cmd = on_command("#签到", priority=5, block=True)
 
 
-@sign_cmd.handle()
-async def handle_sign(bot: Bot, event: GroupMessageEvent):
+async def render_sign_in(bot: Bot, event: GroupMessageEvent) -> str | MessageSegment:
     user_id = event.user_id
     group_id = event.group_id
     today = date.today()
@@ -122,10 +120,9 @@ async def handle_sign(bot: Bot, event: GroupMessageEvent):
         )).scalar_one_or_none()
 
         if row and row.last_date == today:
-            await sign_cmd.send("你今天已经签到过了哦~")
-            return
+            return "你今天已经签到过了哦~"
 
-        # 计算好感度增量
+        # 计算本次签到积分，不与聊天好感度合并。
         add = random.randint(AFF_LO, AFF_HI)
         if row is None:
             row = SignIn(user_id=user_id, group_id=group_id, affection=0, total_days=0, continuous=0)
@@ -217,7 +214,21 @@ async def handle_sign(bot: Bot, event: GroupMessageEvent):
         total_days=total_days,
         hitokoto=hitokoto_text,
     )
-    await sign_cmd.send(MessageSegment.image(img_bytes))
+    return MessageSegment.image(img_bytes)
+
+
+@sign_cmd.handle()
+async def handle_sign(bot: Bot, event: GroupMessageEvent):
+    result = await render_sign_in(bot, event)
+    await sign_cmd.send(result)
+    try:
+        from .agent_runtime import agent_group_enabled
+        from .agent_metrics import record_agent_messages
+
+        if agent_group_enabled(event.group_id):
+            await record_agent_messages(event.group_id, 1)
+    except Exception:
+        pass
 
 
 # ---------- 图片渲染 ----------
@@ -297,11 +308,11 @@ def _render_card(
     draw.text((125, y + 10), greeting, font=FONT_L, fill="white")
     draw.text((125, y + 48), nickname, font=FONT_S, fill=(200, 200, 200))
 
-    # --- 5. 好感度信息 ---
+    # --- 5. 签到积分信息 ---
     y = 160
-    draw.text((30, y), f"好感度+{add}", font=FONT_M, fill=(255, 220, 100))
+    draw.text((30, y), f"签到积分+{add}", font=FONT_M, fill=(255, 220, 100))
     y += 40
-    draw.text((30, y), f"当前好感度：{affection}", font=FONT_M, fill="white")
+    draw.text((30, y), f"当前签到积分：{affection}", font=FONT_M, fill="white")
     y += 40
     draw.text((30, y), f"当前群排名：第{rank}位", font=FONT_M, fill="white")
     y += 50
@@ -366,7 +377,7 @@ def _random_bg_from_minio() -> bytes | None:
 
 
 # ---------- #下载图片 指令 ----------
-ADMIN_USERS = {int(uid) for uid in sign_cfg.get("admin_users", [])}
+ADMIN_USERS = {int(uid) for uid in config.get("setu", {}).get("admin_users", [])}
 BG_APIS = [
     "https://www.dmoe.cc/random.php",
     "https://cdn.seovx.com/d/?mom=302",

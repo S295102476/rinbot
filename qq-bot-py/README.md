@@ -1,152 +1,92 @@
-# QQ 机器人
+# RinBot 开发说明
 
-基于nonebot编写的一个qq机器人。
+项目介绍、功能和部署入口统一维护在[根 README](../README.md)，本文件记录开发与手动安装方式。默认部署建议使用 Docker Compose；手动运行需要自行准备 MySQL、Redis 和 MinIO。
 
-## 功能一览
+## 目录与运行环境
 
-### 聊天
+| 目录 / 文件 | 用途 |
+| --- | --- |
+| `bot.py`、`runtime_config.py` | 启动、配置校验与功能加载 |
+| `plugins/` | 机器人、Agent、控制台后端与小游戏 |
+| `console/` | React / TypeScript 管理控制台 |
+| `persona/` | 公开角色种子与公共知识 |
+| `data/` | 随代码提供的小资源；运行数据不提交 |
+| `tests/`、`tools/` | 后端测试与维护工具 |
 
-通过 **@机器人** 触发，能够自动回复以及主动回复。
+Python 使用 **3.11**，前端构建使用 **Node.js 22** 和 npm。生产配置依照 `config.example.yaml`，前端依赖使用 `package-lock.json`，Python 使用 `requirements.lock.txt`。
 
-| 触发方式 | 说明 |
-|---|---|
-| `@机器人 <内容>` | 对话，支持发送图片让她识图评论 |
-| `@机器人 [图片]` | 发送图片，会识图并发表评论 |
+## 手动安装
 
-> **被动回复**：在开启功能的群内，会以小概率自发参与群聊，也会以小概率对群内图片进行识图评论。
+先准备可连接的 MySQL、Redis 与 MinIO，创建独立数据库和访问账号。以下命令从本目录运行：
 
----
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.lock.txt -r requirements-dev.txt
+python -m playwright install chromium
+cp config.example.yaml config.yaml
+cp .env.example .env
+```
 
-### 记忆管理
+Windows PowerShell 使用 `.\.venv\Scripts\Activate.ps1` 激活环境，复制文件用 `Copy-Item`。系统还需要中文字体；Linux 可安装 Noto CJK 字体包，浏览器系统依赖可用 `python -m playwright install --with-deps chromium` 安装。
 
-对你的记忆与对话历史。
+编辑 `config.yaml`：填写模型完整请求地址、密钥、名称、允许群、管理员，以及本机数据库 / Redis / MinIO 连接信息。模板中的 `mysql`、`redis`、`minio` 是 Compose 服务名，手动安装时改为实际地址。
 
-| 指令 | 说明 |
-|---|---|
-| `#我的记忆` | 查看机器人对你的记忆摘要（最近 50 条） |
-| `#清除记忆` | 清除机器人对你的所有用户记忆 |
-| `#清除历史` | 清除你与机器人的全部对话历史 |
-| `#清除搜索` | 清除你的 AI 搜索上下文记录 |
+在 `.env` 中设置 OneBot Token 和控制台认证变量。使用 `python tools/console_password.py` 按提示生成密码哈希并粘贴到 `AGENT_CONSOLE_PASSWORD_HASH`，OneBot Token 使用随机值；控制台会话由 Redis 存储。准确变量名以 `.env.example` 为准。
 
----
+构建控制台并启动：
 
-### 每日签到
+```bash
+cd console
+npm ci
+npm run build
+cd ..
+python bot.py
+```
 
-每日签到获取好感度，生成精美图片卡片，支持连续签到加成（`sign_in.py`）。
+服务监听、控制台和 OneBot 接入见[部署说明](../docs/deployment.md)。不要将自己的 `config.yaml`、`.env` 或数据库提交到仓库。
 
-| 指令 | 说明 |
-|---|---|
-| `#签到` | 每日签到，获得好感度，查看签到排名 |
+## 前端开发
 
-- 每日好感度随机 +1~10
-- 连续签到额外 +5
-- 签到卡片随机背景图 + 每日一言
+在 `console/` 执行 `npm run dev`，开发地址为 `http://127.0.0.1:5173/admin/`。Vite 将管理 API 代理给本地 Bot；需要真正操作数据时先运行后端并完成本地配置。Playwright 用例使用受控的接口模拟，不能代替真实服务接入验收。
 
----
+```bash
+cd console
+npm ci
+npm run dev
+```
 
-### 搜索
+## 验证改动
 
-调用 AI 搜索引擎，回答各类知识问题，并保持单独的搜索对话上下文。
+后端命令从 `qq-bot-py/` 执行：
 
-| 指令 | 说明 |
-|---|---|
-| `#搜索 <内容>` | AI 智能搜索，客观回答问题 |
-| `#搜索 帮我生成一个html页面...` | 检测到文件生成意图，直接上传文件到群文件 |
+```bash
+python -m pytest tests -q
+python tools/check_idioms.py
+```
 
-**文件生成支持类型**：html / py / md / json / csv / txt
+前端命令从 `qq-bot-py/console/` 执行：
 
----
+```bash
+npm run build
+npx playwright install chromium
+npm test
+```
 
-### 搜图
+公开文件检查从仓库根目录执行：
 
-关键词搜 Pixiv 插画，或以图搜图。
+```bash
+python tools/check_public_release.py
+```
 
-| 指令 | 说明 |
-|---|---|
-| `#搜图 <关键词>` | 按关键词搜索 Pixiv 插画（Lolicon API） |
-| `#搜图 [图片]` | 以图搜图，使用 SauceNAO + ASCII2D 多引擎识图，AI 兜底 |
-| 回复图片 + `#搜图` | 对回复的图片进行以图搜图 |
+测试优先使用临时数据库、内存存储和模拟服务，不连接原部署者的服务器。修改可选功能时至少验证开关关闭且无凭据时不影响默认启动。
 
----
+## 修改人设
 
-### 跑团骰子
+远坂凛兼容 `persona/*.md` 布局，艾蕾与伊什塔尔使用 `persona/profiles/<id>/`，公共知识放在 `persona/shared/`。角色注册信息位于 `persona/registry.yaml`。管理员可通过控制台编辑和回滚文档，详细目录规则见[人格说明](persona/profiles/README.md)。
 
-完整的克苏鲁的呼唤 (Call of Cthulhu) 跑团骰子系统，支持角色卡管理与多种骰子规则（`coc_dice.py`）。
+Docker 中实际人设来自持久化卷，源码中的内容是首次初始化种子；修改种子不会自动覆盖线上人设。发布前确认私人关系档案未进入提交。
 
-所有指令以 `.` 开头。
+## 维护工具
 
-#### 掷骰指令
-
-| 指令 | 说明 | 示例 |
-|---|---|---|
-| `.r [表达式]` / `.roll` | 通用掷骰，支持复杂表达式 | `.r 3d6+2`、`.r 2d10kh1` |
-| `.rd` | 快速投 D100 | `.rd` |
-| `.ra <属性> [数值]` | 属性/技能检定，不填数值则读角色卡 | `.ra 侦查 60`、`.ra 力量` |
-| `.rh [表达式]` | 暗骰，结果以私聊发送给玩家 | `.rh d100` |
-| `.rb [表达式]` | 奖励骰（取较低结果） | `.rb 侦查 60` |
-| `.rp [表达式]` | 惩罚骰（取较高结果） | `.rp 侦查 60` |
-
-#### 角色卡管理
-
-| 指令 | 说明 | 示例 |
-|---|---|---|
-| `.coc [数量]` | 随机生成 COC 调查员角色卡（默认 1 张） | `.coc`、`.coc 5` |
-| `.st <属性设置>` | 设置/修改角色属性 | `.st 侦查:70 力量:50` |
-| `.en <属性>` | 技能成长检定 | `.en 侦查` |
-
-#### 战斗与理智
-
-| 指令 | 说明 | 示例 |
-|---|---|---|
-| `.sc <成功消耗>/<失败消耗>` | 理智检定 | `.sc 1/1d6` |
-| `.ti` | 随机抽取临时疯狂症状 | `.ti` |
-| `.li` | 随机抽取长期疯狂症状 | `.li` |
-
-#### 其他
-
-| 指令 | 说明 |
-|---|---|
-| `.setcoc [规则0-5]` | 设置本群使用的 COC 检定规则（默认规则5） |
-| `.jrrp` | 今日人品（每日固定值） |
-| `.help` / `.h` | 查看 COC 骰子帮助 |
-
----
-
-### 杀戮尖塔 2 Wiki 查询
-
-本地数据库版，数据来源于 [sts2.huijiwiki.com](https://sts2.huijiwiki.com)。
-
-| 指令 | 说明 | 示例 |
-|---|---|---|
-| `#尖塔 <名称>` | 全局搜索（卡牌/遗物/药水/词条） | `#尖塔 打击` |
-| `#尖塔 卡牌 <名称>` | 只搜索卡牌 | `#尖塔 卡牌 打击` |
-| `#尖塔 遗物 <名称>` | 只搜索遗物 | `#尖塔 遗物 燃烧血液` |
-| `#尖塔 药水 <名称>` | 只搜索药水 | `#尖塔 药水 力量药水` |
-| `#尖塔 词条 <名称>` | 搜索每日挑战词条/修改器 | `#尖塔 词条 诅咒` |
-| `#尖塔 今日挑战` | 查看今日每日挑战信息 | `#尖塔 今日挑战` |
-| `#尖塔 更新数据` | 重新拉取 Wiki 数据（仅管理员） | — |
-
----
-
-### 游戏插件 (gsuid_core 桥接)
-
-一些二游查询功能。
-
-| 前缀 | 游戏 | 帮助指令 |
-|---|---|---|
-| `ww` | 鸣潮 (WutheringWaves) | `ww帮助` |
-| `end` / `zmd` | 终末地 | `end帮助` |
-| `ark` / `mrfz` | 明日方舟 | `ark帮助` |
-| `zzz` / `绝区零` | 绝区零 | `zzz帮助` |
-| `sr` | 崩坏：星穹铁道 | `sr帮助` |
-| `lol` | 英雄联盟 | `lol帮助` |
-
-> 各游戏支持签到、体力查询、角色面板、绑定 UID 等功能，详细指令请发送对应 `帮助` 指令查看。
-
-**账号绑定指令**（通用）：
-
-| 指令 | 说明 |
-|---|---|
-| `扫码登录` | 米游社扫码绑定账号 |
-| `core添加 <Cookie>` | 手动添加游戏 Cookie |
-| `core刷新CK` | 刷新已绑定的 Cookie |
+棋类引擎、GBVSR 数据与 Core 是可选能力，使用方法见[扩展文档](../docs/extensions.md)。`tools/` 中历史数据抓取或诊断工具可能产生文件、联网或连接数据库，执行前阅读对应脚本参数与用途，不要把生成的数据误提交到公开仓库。

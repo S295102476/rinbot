@@ -1,7 +1,6 @@
 import json
 import io
 import re
-import httpx
 import yaml
 from datetime import datetime, timedelta
 from nonebot import on_command
@@ -10,14 +9,14 @@ from nonebot.params import CommandArg
 from nonebot.adapters.onebot.v11 import Message
 import redis as redis_lib
 from minio import Minio
+from nonebot.log import logger
 
 with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
 ai_cfg = config["ai"]
-_SEARCH_MODEL = ai_cfg.get("search", {}).get("model", ai_cfg["model"])
 minio_cfg = config["meme"]["minio"]
-rds = redis_lib.Redis(host=config["redis"]["host"], port=config["redis"]["port"], decode_responses=True)
+rds = redis_lib.Redis(host=config["redis"]["host"], port=config["redis"]["port"], password=config["redis"].get("password") or None, db=int(config["redis"].get("db", 0)), decode_responses=True)
 
 _minio = Minio(
     minio_cfg["endpoint"],
@@ -87,13 +86,9 @@ async def search(user_id: int, user_message: str) -> str:
     messages.append({"role": "user", "content": user_message})
 
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(
-                ai_cfg["api_url"],
-                headers={"Authorization": f"Bearer {ai_cfg['api_key']}"},
-                json={"model": _SEARCH_MODEL, "messages": messages}
-            )
-            reply = resp.json()["choices"][0]["message"]["content"].strip()
+        from .agent_tools import _search_web
+        query = "\n".join(str(item.get("content", "")) for item in messages)
+        reply = await _search_web({"query": query}, {})
 
         rds.rpush(key, json.dumps({"role": "user", "content": user_message}, ensure_ascii=False))
         rds.rpush(key, json.dumps({"role": "assistant", "content": reply}, ensure_ascii=False))
@@ -103,7 +98,8 @@ async def search(user_id: int, user_message: str) -> str:
 
         return reply
     except Exception as e:
-        return f"搜索出错了：{e}"
+        logger.warning(f"[search] Antigravity 搜索失败: {type(e).__name__}: {e}")
+        return "搜索服务暂不可用，请稍后再试。"
 
 
 async def _handle_file_request(bot: Bot, event: GroupMessageEvent, message: str, ext: str):
@@ -131,19 +127,14 @@ async def _handle_file_request(bot: Bot, event: GroupMessageEvent, message: str,
     await bot.send_group_msg(group_id=group_id, message="正在生成文件，请稍等……")
 
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(
-                ai_cfg["api_url"],
-                headers={"Authorization": f"Bearer {ai_cfg['api_key']}"},
-                json={
-                    "model": _SEARCH_MODEL,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": message},
-                    ],
-                },
-            )
-            file_content = resp.json()["choices"][0]["message"]["content"].strip()
+        from .ai_chat import _call_primary
+
+        file_content = await _call_primary(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message},
+            ],
+        )
     except Exception as e:
         logger.error(f"[search] 文件生成失败: {e}")
         return
@@ -181,7 +172,14 @@ async def _handle_file_request(bot: Bot, event: GroupMessageEvent, message: str,
             length=len(file_bytes),
             content_type="application/octet-stream",
         )
-        file_url = _minio.presigned_get_object(_FILE_BUCKET, filename, expires=timedelta(hours=24))
+        public_endpoint = str(minio_cfg.get("public_endpoint") or "").strip()
+        if not public_endpoint:
+            await bot.send(event, "File delivery requires meme.minio.public_endpoint reachable by the QQ client.")
+            return
+        public_minio = Minio(public_endpoint, access_key=minio_cfg["access_key"],
+                             secret_key=minio_cfg["secret_key"],
+                             secure=bool(minio_cfg.get("public_secure", True)), region="us-east-1")
+        file_url = public_minio.presigned_get_object(_FILE_BUCKET, filename, expires=timedelta(hours=24))
 
         await bot.call_api(
             "upload_group_file",

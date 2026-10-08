@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 import websockets
 import websockets.exceptions
-from nonebot import get_driver, on_message
+from nonebot import get_bots, get_driver, on_message
 from nonebot.adapters.onebot.v11 import (
     Bot,
     Message,
@@ -23,23 +23,25 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.exception import StopPropagation
 from nonebot.log import logger
 
+from .gsuid_commands import (
+    _is_core_command,
+    _is_direct_only_core_command,
+    _is_game_command,
+    _normalize_core_command_text,
+)
+from .group_mode import CHAT_ONLY_GROUPS
+
 # ──────────────────────────────────────────────
 # 配置
 # ──────────────────────────────────────────────
 
-GSUID_WS_URL = "ws://localhost:8765/ws/Nonebot"
+from runtime_config import feature_enabled, load_config
+_bridge_config = load_config()
+_gsuid_config = _bridge_config.get("gsuid") or {}
+GSUID_ENABLED = feature_enabled(_bridge_config, "gsuid") and bool(_gsuid_config.get("enabled", False))
+GSUID_WS_URL = str(_gsuid_config.get("ws_url") or "")
 RESPONSE_TIMEOUT = 30   # 等待 gsuid_core 首次响应的超时（秒）
 DRAIN_TIMEOUT = 2       # 收到首条响应后，继续等待后续消息的超时（秒）
-
-# 游戏插件的触发前缀（小写匹配，含中文前缀）
-GAME_PREFIXES = ("ww", "end", "zmd", "ark", "mrfz", "zzz", "绝区零", "lol", "sr", "nte", "ss")
-
-# gsuid_core 核心指令（无游戏前缀，需要完整匹配或前缀匹配，全部转发给 gsuid_core）
-# 包含绑定 Cookie / 扫码登录等账号管理指令
-CORE_COMMANDS = (
-    "扫码登陆", "扫码登录",  # 米游社扫码登录（prefix=False，无需 core 前缀）
-    "core",                  # 所有 core* 管理指令（core添加<ck>、core刷新CK 等）
-)
 
 # ──────────────────────────────────────────────
 # 全局状态
@@ -80,10 +82,20 @@ async def _ws_listener():
                     if msg_id and msg_id in _pending:
                         await _pending[msg_id].put(content)
                     else:
-                        logger.warning(
-                            f"[GsuidBridge] 未匹配响应 msg_id={msg_id!r} "
-                            f"target={target} （当前等待数量={len(_pending)}）"
-                        )
+                        # ``target_send`` is also used by GsCore for主动推送
+                        # (抽卡登录完成、插件更新通知、定时任务等). 这些消息
+                        # 没有对应的入站 msg_id，不能只丢进 warning，否则
+                        # GsCore 看似发送成功，QQ 用户却永远收不到。
+                        if await _send_unsolicited(data):
+                            logger.info(
+                                f"[GsuidBridge] 已转发主动推送: target={target} "
+                                f"segments={len(content)}"
+                            )
+                        else:
+                            logger.warning(
+                                f"[GsuidBridge] 未匹配响应 msg_id={msg_id!r} "
+                                f"target={target} （当前等待数量={len(_pending)}）"
+                            )
                 except Exception as e:
                     logger.warning(f"[GsuidBridge] 消息解析异常: {e}")
         except Exception as e:
@@ -100,6 +112,10 @@ driver = get_driver()
 @driver.on_startup
 async def start_bridge():
     global _connected
+    if not GSUID_ENABLED:
+        return
+    if not GSUID_WS_URL.startswith(("ws://", "wss://")):
+        raise ValueError("Configure gsuid.ws_url before enabling Core.")
     _connected = asyncio.Event()
     asyncio.create_task(_ws_listener())
     logger.info("[GsuidBridge] 后台 WebSocket 监听器已启动")
@@ -108,19 +124,6 @@ async def start_bridge():
 # ──────────────────────────────────────────────
 # 工具函数
 # ──────────────────────────────────────────────
-
-def _is_game_command(text: str) -> bool:
-    """判断是否是游戏指令或核心指令（需要转发给 gsuid_core）"""
-    lower = text.lower().lstrip()
-    # 游戏前缀（小写不区分大小写）
-    if any(lower.startswith(p) for p in GAME_PREFIXES):
-        return True
-    # 核心指令（原文匹配，含中文，不 lower）
-    stripped = text.strip()
-    if any(stripped == cmd or stripped.startswith(cmd) for cmd in CORE_COMMANDS):
-        return True
-    return False
-
 
 def _get_user_pm(event: MessageEvent) -> int:
     """根据群成员角色返回权限等级（越小越高）"""
@@ -149,6 +152,7 @@ async def _forward(bot: Bot, event: MessageEvent, msg_id: str) -> bool:
         if seg.type == "text":
             t = seg.data.get("text", "").strip()
             if t:
+                t = _normalize_core_command_text(t)
                 content.append({"type": "text", "data": t})
         elif seg.type == "image":
             url = seg.data.get("url") or seg.data.get("file", "")
@@ -258,8 +262,89 @@ def _extract_segments(segs: list) -> List[MessageSegment]:
     return parts
 
 
+def _coerce_target_id(value):
+    """保留非数字 ID，同时把 OneBot 常见的数字字符串转为 int。"""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return int(text) if text.isdigit() else text
+
+
+def _select_bot(data: dict):
+    """选择 GsCore 主动推送对应的 NoneBot 实例。"""
+    bots = get_bots()
+    if not bots:
+        return None
+
+    wanted_self_id = str(data.get("bot_self_id") or "").strip()
+    if wanted_self_id:
+        for bot in bots.values():
+            if str(getattr(bot, "self_id", "")) == wanted_self_id:
+                return bot
+
+    # 早柚旧版本的 MessageSend 可能只带 bot_id，不带 bot_self_id。
+    wanted_bot_id = str(data.get("bot_id") or "").strip()
+    if wanted_bot_id:
+        for bot in bots.values():
+            if str(getattr(bot, "type", "")) == wanted_bot_id:
+                return bot
+
+    # 当前部署只有一个 NoneBot 账号时，直接使用唯一实例。
+    if len(bots) == 1:
+        return next(iter(bots.values()))
+    return None
+
+
+async def _send_unsolicited(data: dict) -> bool:
+    """把 GsCore 的无请求主动消息投递到 OneBot 目标会话。"""
+    target_type = str(data.get("target_type") or "").lower()
+    target_id = _coerce_target_id(data.get("target_id"))
+    if target_type not in {"direct", "private", "friend", "group"} or target_id is None:
+        # 日志帧（target_type/target_id 为空）不应当当成 QQ 消息发送。
+        return False
+
+    if target_type == "group" and target_id in CHAT_ONLY_GROUPS:
+        logger.debug(
+            f"[GsuidBridge] 已抑制纯聊天群主动推送: group={target_id}"
+        )
+        # 该帧已被有意处理，避免监听器把它记成“未匹配响应”。
+        return True
+
+    parts = _extract_segments(data.get("content") or [])
+    if not parts:
+        return False
+
+    bot = _select_bot(data)
+    if bot is None:
+        logger.warning(
+            "[GsuidBridge] 主动推送找不到对应的 NoneBot 实例: "
+            f"bot_id={data.get('bot_id')!r} bot_self_id={data.get('bot_self_id')!r}"
+        )
+        return False
+
+    message = Message(parts)
+    try:
+        if target_type in {"direct", "private", "friend"}:
+            await bot.send_private_msg(user_id=target_id, message=message)
+        else:
+            await bot.send_group_msg(group_id=target_id, message=message)
+        return True
+    except Exception as e:
+        logger.warning(
+            f"[GsuidBridge] 主动推送发送失败 target={target_type}:{target_id}: {e}"
+        )
+        return False
+
+
 async def _send_results(bot: Bot, event: MessageEvent, results: List[List]):
     """将 gsuid_core 返回的内容逐条发送给 QQ"""
+    if isinstance(event, GroupMessageEvent) and int(event.group_id) in CHAT_ONLY_GROUPS:
+        logger.debug(
+            f"[GsuidBridge] 已抑制纯聊天群响应: group={int(event.group_id)}"
+        )
+        return
     for content in results:
         if _is_tech_error(content):
             logger.warning(f"[GsuidBridge] 屏蔽技术性错误消息: {content}")
@@ -280,11 +365,22 @@ game_handler = on_message(priority=3, block=False)
 
 @game_handler.handle()
 async def handle_game(bot: Bot, event: MessageEvent):
+    if not GSUID_ENABLED:
+        return
+    if isinstance(event, GroupMessageEvent) and int(event.group_id) in CHAT_ONLY_GROUPS:
+        return
+
     plain = event.get_plaintext().strip()
 
     # 非游戏指令，直接跳过，交由 ai_chat / group_chat 处理
     if not _is_game_command(plain):
         return
+
+    is_core_command = _is_core_command(plain)
+
+    if isinstance(event, GroupMessageEvent) and _is_direct_only_core_command(plain):
+        await bot.send(event, "绑定设备仅支持私聊，请直接私聊机器人后再发送设备信息。")
+        raise StopPropagation
 
     msg_id = str(uuid.uuid4())
 
@@ -295,11 +391,23 @@ async def handle_game(bot: Bot, event: MessageEvent):
     sent = await _forward(bot, event, msg_id)
     if not sent:
         _pending.pop(msg_id, None)
+        if is_core_command:
+            await bot.send(
+                event,
+                "GsCore 当前未连接，命令未执行。请先启动 GsCore（8765 端口）后重试。",
+            )
+            raise StopPropagation
         return
 
     results = await _collect_responses(msg_id, q)
     if not results:
         # gsuid_core 无响应（命令不存在），允许后续处理器继续
+        if is_core_command:
+            await bot.send(
+                event,
+                "GsCore 未返回结果，命令可能未加载。请重启 GsCore 后重试。",
+            )
+            raise StopPropagation
         return
 
     await _send_results(bot, event, results)

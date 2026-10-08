@@ -7,7 +7,12 @@
 import asyncio
 import base64
 import random
+import re
+import ssl
+import urllib3
 from datetime import datetime, timedelta, date
+from requests.adapters import HTTPAdapter
+from typing import Any, Awaitable, Callable
 
 import httpx
 import yaml
@@ -23,6 +28,37 @@ from nonebot.log import logger
 from nonebot.params import CommandArg
 from sqlalchemy import select
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+def _make_no_verify_ctx() -> ssl.SSLContext:
+    """创建跳过 SSL 证书校验的 context，同时修复 Python 3.12 的 UNEXPECTED_EOF 问题"""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    # Python 3.12 + OpenSSL 3.x：服务端不发 close_notify 会抛 UNEXPECTED_EOF，加此选项忽略
+    if hasattr(ssl, "OP_IGNORE_UNEXPECTED_EOF"):
+        ctx.options |= ssl.OP_IGNORE_UNEXPECTED_EOF
+    return ctx
+
+
+class _NoVerifyAdapter(HTTPAdapter):
+    """跳过 SSL 证书校验，允许 urllib3 对 read 错误重试以处理代理关闭的过期连接（SSLZeroReturnError）"""
+    # read=3：连接被代理关闭后用新连接重试（SSLZeroReturnError/stale conn）
+    # connect=0：不重试 connect 级别错误
+    # raise_on_status=False：不对 HTTP 状态码抛异常
+    _RETRY = urllib3.Retry(read=3, connect=0, raise_on_status=False, backoff_factor=0.5)
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["ssl_context"] = _make_no_verify_ctx()
+        kwargs["retries"] = self._RETRY
+        super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs["ssl_context"] = _make_no_verify_ctx()
+        proxy_kwargs["retries"] = self._RETRY
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
 from .db import Base, engine, get_session, SetuRecord, RankingCache
 
 # ---------- 配置 ----------
@@ -35,10 +71,16 @@ img_cfg = config.get("image_search", {})
 CURATED_ARTISTS: list[int] = setu_cfg.get("curated_artists", [])
 CURATED_RATE = setu_cfg.get("curated_rate", 0.75)
 NUM = setu_cfg.get("num", 5)
+# Natural-language Agent requests deliberately send fewer images than the
+# explicit #涩图 command.  The model never controls this value.
+AGENT_NUM = max(1, min(int(setu_cfg.get("agent_num", 1)), int(NUM)))
 REFRESH_TOKEN = setu_cfg.get("pixiv_refresh_token", "")
 USER_DAILY_LIMIT = setu_cfg.get("user_daily_limit", 1)
 GROUP_DAILY_LIMIT = setu_cfg.get("group_daily_limit", 3)
 MIN_TAGS = setu_cfg.get("min_tags", 5)
+GROUP_OVERRIDES: dict[int, dict] = {
+    int(k): v for k, v in setu_cfg.get("group_overrides", {}).items()
+}
 
 ADMIN_USERS: set[int] = set(setu_cfg.get("admin_users", []))
 PIXIV_API_PROXY = setu_cfg.get("pixiv_api_proxy", "") or None  # socks5://127.0.0.1:1080
@@ -47,25 +89,57 @@ LOLICON_API = img_cfg.get("lolicon_api", "https://api.lolicon.app/setu/v2")
 PIXIV_PROXY = img_cfg.get("pixiv_proxy", "i.pixiv.re")
 PROXY = img_cfg.get("proxy", "") or None
 
+ai_cfg = config.get("ai", {})
+
 # R18 相关 tag（过滤用）
-_R18_TAGS = {"R-18", "R-18G", "R18", "R18G"}
+_R18_TAGS = {"R-18", "R-18G", "R18", "R18G"}   # 普通群：全部过滤
+_R18G_TAGS = {"R-18G", "R18G"}                  # 白名单群：仅过滤 R18G
+_UNDERAGE_SETU_RE = re.compile(
+    r"(?:萝莉|幼(?:女|儿|年)|未成年|小学生|儿童|童(?:女|年)|loli(?:ta)?|lolita|shota|正太)",
+    re.IGNORECASE,
+)
+_TAG_CONVERSION_ERROR_MARKERS = (
+    "prompt could not be submitted",
+    "generative ai prohibited use policy",
+    "contains sensitive words",
+    "send feedback",
+    "ai.google.dev",
+)
+
+# R18 白名单群组（这些群不过滤 R-18，但依然过滤 R-18G）
+R18_WHITELIST_GROUPS: set[int] = set(setu_cfg.get("r18_whitelist_groups", []))
 
 rds = redis_lib.Redis(
     host=config["redis"]["host"],
-    port=config["redis"]["port"],
+    port=config["redis"]["port"], password=config["redis"].get("password") or None, db=int(config["redis"].get("db", 0)),
     decode_responses=True,
 )
+
+
+def is_disallowed_setu_request(value: object) -> bool:
+    """Reject tag requests that explicitly sexualize minors or child-coded terms."""
+    if isinstance(value, (list, tuple, set)):
+        value = " ".join(str(item or "") for item in value)
+    return bool(_UNDERAGE_SETU_RE.search(str(value or "")))
+
+
+def _is_tag_conversion_error(raw: str) -> bool:
+    normalized = str(raw or "").casefold()
+    return any(marker in normalized for marker in _TAG_CONVERSION_ERROR_MARKERS)
 
 # ---------- Pixiv API 客户端 ----------
 _papi = None  # AppPixivAPI | None
 _papi_lock = asyncio.Lock()
 _papi_auth_time: float = 0  # 上次鉴权时间戳
+_papi_fail_time: float = 0  # 上次鉴权失败时间戳（失败后60秒内不重试）
 _PAPI_TOKEN_TTL = 2700  # 45 分钟刷新一次（token 有效期 3600s，留 buffer）
+_PAPI_AUTH_TIMEOUT = 45  # 鉴权超时秒数（代理环境建连较慢）
+_PAPI_FAIL_COOLDOWN = 60  # 鉴权失败后多少秒内不再重试
 
 
 async def _get_pixiv_api():
     """懒初始化 Pixiv API，自动用 refresh_token 鉴权，token 过期自动刷新"""
-    global _papi, _papi_auth_time
+    global _papi, _papi_auth_time, _papi_fail_time
     if not HAS_PIXIVPY:
         logger.warning("[setu] pixivpy3 未安装，跳过画师库")
         return None
@@ -75,42 +149,59 @@ async def _get_pixiv_api():
     import time
     async with _papi_lock:
         now = time.time()
+        # 鉴权失败冷却期内直接跳过，不重试
+        if _papi is None and _papi_fail_time and (now - _papi_fail_time) < _PAPI_FAIL_COOLDOWN:
+            return None
         # 已初始化但 token 过期 → 刷新
         if _papi is not None and (now - _papi_auth_time) > _PAPI_TOKEN_TTL:
             try:
                 logger.info("[setu] Pixiv token 即将过期，主动刷新...")
                 await asyncio.wait_for(
                     asyncio.to_thread(_papi.auth, refresh_token=REFRESH_TOKEN),
-                    timeout=15,
+                    timeout=_PAPI_AUTH_TIMEOUT,
                 )
                 _papi_auth_time = time.time()
+                _papi_fail_time = 0
                 logger.info("[setu] Pixiv token 刷新成功")
             except Exception as e:
                 logger.error(f"[setu] Pixiv token 刷新失败: {e}")
                 _papi = None
                 _papi_auth_time = 0
-        # 未初始化 → 首次鉴权
+                _papi_fail_time = time.time()
+        # 未初始化 → 首次鉴权（最多重试 3 次，每次新建连接）
         if _papi is None:
-            try:
-                api = AppPixivAPI()
-                proxy = PIXIV_API_PROXY or PROXY
-                if proxy:
-                    socks_proxy = proxy.replace("socks5://", "socks5h://")
-                    api.requests.proxies = {"https": socks_proxy, "http": socks_proxy}
-                    logger.info(f"[setu] Pixiv 代理: {socks_proxy}")
-                api.set_additional_headers({"Accept-Language": "zh-CN"})
-                logger.info("[setu] 正在鉴权 Pixiv API...")
-                await asyncio.wait_for(
-                    asyncio.to_thread(api.auth, refresh_token=REFRESH_TOKEN),
-                    timeout=15,
-                )
-                _papi = api
-                _papi_auth_time = time.time()
-                logger.info("[setu] Pixiv API 鉴权成功")
-            except Exception as e:
-                import traceback
-                logger.error(f"[setu] Pixiv API 鉴权失败: {type(e).__name__}: {e}")
+            import traceback
+            last_exc = None
+            for attempt in range(1, 4):
+                try:
+                    api = AppPixivAPI()
+                    proxy = PIXIV_API_PROXY or PROXY
+                    if proxy:
+                        socks_proxy = proxy.replace("socks5://", "socks5h://")
+                        api.requests.proxies = {"https": socks_proxy, "http": socks_proxy}
+                    api.requests.mount("https://", _NoVerifyAdapter())
+                    api.requests.mount("http://", _NoVerifyAdapter())
+                    api.set_additional_headers({"Accept-Language": "zh-CN"})
+                    logger.info(f"[setu] 正在鉴权 Pixiv API (第 {attempt} 次)...")
+                    await asyncio.wait_for(
+                        asyncio.to_thread(api.auth, refresh_token=REFRESH_TOKEN),
+                        timeout=_PAPI_AUTH_TIMEOUT,
+                    )
+                    _papi = api
+                    _papi_auth_time = time.time()
+                    _papi_fail_time = 0
+                    logger.info("[setu] Pixiv API 鉴权成功")
+                    last_exc = None
+                    break
+                except Exception as e:
+                    last_exc = e
+                    logger.warning(f"[setu] Pixiv 鉴权第 {attempt} 次失败: {type(e).__name__}: {e}")
+                    if attempt < 3:
+                        await asyncio.sleep(5)
+            if last_exc is not None:
+                logger.error(f"[setu] Pixiv API 鉴权全部失败: {last_exc}")
                 logger.error(f"[setu] 异常详情:\n{traceback.format_exc()}")
+                _papi_fail_time = time.time()
                 return None
     return _papi
 
@@ -151,16 +242,20 @@ def _group_key(group_id: int) -> str:
 
 def _check_limit(user_id: int, group_id: int) -> str | None:
     """检查限流，返回提示语或 None（可以继续）"""
+    override = GROUP_OVERRIDES.get(group_id, {})
+    u_limit = override.get("user_daily_limit", USER_DAILY_LIMIT)
+    g_limit = override.get("group_daily_limit", GROUP_DAILY_LIMIT)
+
     # 管理员跳过个人限额
     if user_id not in ADMIN_USERS:
         uk = _user_key(user_id)
         user_count = int(rds.get(uk) or 0)
-        if user_count >= USER_DAILY_LIMIT:
+        if user_count >= u_limit:
             return "今天已经看过涩图了哦，注意身体~"
 
     gk = _group_key(group_id)
     group_count = int(rds.get(gk) or 0)
-    if group_count >= GROUP_DAILY_LIMIT:
+    if group_count >= g_limit:
         return "涩图太多啦，休息一会吧！"
 
     return None
@@ -216,7 +311,7 @@ async def _record_sent(pid: int, uid: int, title: str, author: str, url: str):
 
 
 # ---------- 画师库抽图 ----------
-async def _pick_from_curated(used_artists: set[int], used_pids: set[int]) -> dict | None:
+async def _pick_from_curated(used_artists: set[int], used_pids: set[int], allow_r18: bool = False) -> dict | None:
     """从画师库抽1张图，返回 {pid, uid, title, author, url} 或 None"""
     api = await _get_pixiv_api()
     if not api:
@@ -249,12 +344,12 @@ async def _pick_from_curated(used_artists: set[int], used_pids: set[int]) -> dic
         filtered = [
             ill for ill in illusts
             if len(ill.get("tags", [])) >= MIN_TAGS
-            and ill.get("sanity_level", 0) < 6
+            and ill.get("sanity_level", 0) < (7 if allow_r18 else 6)
             and ill.get("type") == "illust"
             and ill.get("id") not in used_pids
-            and not any(t.get("name") in _R18_TAGS for t in ill.get("tags", []))
+            and not any(t.get("name") in (_R18G_TAGS if allow_r18 else _R18_TAGS) for t in ill.get("tags", []))
         ]
-        logger.info(f"[setu] 画师 {artist_uid}: 过滤后 {len(filtered)} 张 (tags>={MIN_TAGS}, sanity<6, 非R18)")
+        logger.info(f"[setu] 画师 {artist_uid}: 过滤后 {len(filtered)} 张 (tags>={MIN_TAGS}, sanity<{'7' if allow_r18 else '6'}, {'仅过滤R18G' if allow_r18 else '非R18'})")
 
         if not filtered:
             continue
@@ -292,7 +387,7 @@ async def _pick_from_curated(used_artists: set[int], used_pids: set[int]) -> dic
 
 
 # ---------- 标签搜索 ----------
-async def _pick_from_tag_search(tags: list[str], used_pids: set[int], count: int) -> list[dict]:
+async def _pick_from_tag_search(tags: list[str], used_pids: set[int], count: int, allow_r18: bool = False) -> list[dict]:
     """按标签搜索 Pixiv，返回最多 count 张符合条件的图"""
     api = await _get_pixiv_api()
     if not api:
@@ -311,6 +406,7 @@ async def _pick_from_tag_search(tags: list[str], used_pids: set[int], count: int
     offset = start_offset
     max_pages = 10
     _dbg_r18 = _dbg_type = _dbg_sanity = 0
+    _block_tags = _R18G_TAGS if allow_r18 else _R18_TAGS
 
     for page in range(max_pages):
         try:
@@ -336,13 +432,13 @@ async def _pick_from_tag_search(tags: list[str], used_pids: set[int], count: int
             pid = ill.get("id")
             if pid in used_pids:
                 continue
-            if any(t.get("name") in _R18_TAGS for t in ill.get("tags", [])):
+            if any(t.get("name") in _block_tags for t in ill.get("tags", [])):
                 _dbg_r18 += 1
                 continue
             if ill.get("type") != "illust":
                 _dbg_type += 1
                 continue
-            if ill.get("sanity_level", 0) >= 7:
+            if ill.get("sanity_level", 0) >= (8 if allow_r18 else 7):
                 _dbg_sanity += 1
                 continue
             original_url = (
@@ -423,11 +519,11 @@ async def _pick_from_tag_search(tags: list[str], used_pids: set[int], count: int
 
 
 # ---------- Lolicon 随机抽图 ----------
-async def _pick_from_lolicon(used_pids: set[int]) -> dict | None:
+async def _pick_from_lolicon(used_pids: set[int], allow_r18: bool = False) -> dict | None:
     """从 Lolicon API 抽1张高质量图"""
     payload = {
         "num": 1,
-        "r18": 0,
+        "r18": 1 if allow_r18 else 0,
         "excludeAI": True,
 
         "size": ["regular"],
@@ -477,8 +573,50 @@ async def _pick_from_lolicon(used_pids: set[int]) -> dict | None:
     return None
 
 
+# ---------- 中文→日文 Pixiv tag 转换 ----------
+async def _chinese_to_pixiv_tags(text: str) -> list[str]:
+    """调用 OpenAI Responses 将中文描述转为 Pixiv 日文搜索标签。
+    用户输入几个词（空格分隔）就返回几个标签；单个词只返回1个最准确的标签。
+    API 异常或返回异常时，直接返回原始中文词列表（作为兜底标签）。
+    """
+    input_words = text.split()
+    tag_count = len(input_words)
+
+    if tag_count == 1:
+        count_instruction = "只输出1个最准确的标签，不要输出多个。"
+    else:
+        count_instruction = f"用户输入了{tag_count}个词，请对每个词各输出1个最准确的标签，共{tag_count}个，用英文逗号分隔。"
+
+    system_prompt = (
+        "你是Pixiv标签专家。用户输入中文描述（角色名/作品名/画风/特征），"
+        f"{count_instruction}"
+        "规则：角色名、作品名、专有名词一律用日文全角汉字或平假名（如 雷電将軍、原神、ホロライブ）；"
+        "画风/特征类用英文下划线格式（如 thighhighs、white_pantyhose）；"
+        "若输入已是日文/英文则原样输出。只输出标签，不要任何解释或标点。"
+    )
+    try:
+        from .ai_chat import _call_primary
+
+        raw = await _call_primary(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text},
+            ],
+        )
+        raw = raw.strip()
+        if not raw or _is_tag_conversion_error(raw):
+            raise ValueError("tag conversion provider rejected or failed the request")
+        tags = [t.strip() for t in raw.split(",") if t.strip()]
+        if tags:
+            logger.info(f"[setu_conv] '{text}' → {tags}")
+            return tags
+    except Exception as e:
+        logger.debug(f"[setu_conv] tag转换失败，兜底使用原文: {e}")
+    return input_words
+
+
 # ---------- 综合抽图 ----------
-async def _pick_images(count: int) -> list[dict]:
+async def _pick_images(count: int, allow_r18: bool = False) -> list[dict]:
     """抽取 count 张图，画师库优先，失败才降级 Lolicon"""
     results = []
     used_artists: set[int] = set()
@@ -486,11 +624,11 @@ async def _pick_images(count: int) -> list[dict]:
 
     for i in range(count):
         logger.info(f"[setu] 第{i+1}张: 走画师库")
-        item = await _pick_from_curated(used_artists, used_pids)
+        item = await _pick_from_curated(used_artists, used_pids, allow_r18)
 
         if item is None:
             logger.info(f"[setu] 第{i+1}张: 画师库失败，降级 Lolicon")
-            item = await _pick_from_lolicon(used_pids)
+            item = await _pick_from_lolicon(used_pids, allow_r18)
 
         if item:
             used_pids.add(item["pid"])
@@ -508,27 +646,40 @@ async def _pick_images(count: int) -> list[dict]:
 async def _download_images(images: list[dict]) -> list[tuple[dict, bytes | None]]:
     """并发下载图片，返回 [(img_info, data_or_None), ...]"""
     async def _dl(client: httpx.AsyncClient, img: dict) -> tuple[dict, bytes | None]:
-        try:
-            resp = await client.get(img["url"])
-            if resp.status_code == 200 and len(resp.content) > 1000:
-                size_kb = len(resp.content) // 1024
-                if size_kb > 2048 and img.get("fallback_url") and img["fallback_url"] != img["url"]:
-                    logger.info(f"[setu] 原图过大({size_kb}KB)，降级: PID={img['pid']}")
-                    resp2 = await client.get(img["fallback_url"])
-                    if resp2.status_code == 200 and len(resp2.content) > 1000:
-                        logger.info(f"[setu] 降级下载成功: PID={img['pid']} {len(resp2.content)//1024}KB")
-                        return img, resp2.content
-                elif size_kb > 8192:
-                    logger.warning(f"[setu] 跳过超大图片: PID={img['pid']} {size_kb}KB")
-                    return img, None
-                logger.info(f"[setu] 下载成功: PID={img['pid']} {size_kb}KB")
-                return img, resp.content
-            logger.warning(f"[setu] 下载异常: PID={img['pid']} status={resp.status_code}")
-        except Exception as e:
-            logger.warning(f"[setu] 下载失败: PID={img['pid']} {img['url'][:60]}… → {e}")
+        for _retry in range(2):  # 网络抖动重试一次
+            try:
+                resp = await client.get(img["url"])
+                if resp.status_code == 200 and len(resp.content) > 1000:
+                    size_kb = len(resp.content) // 1024
+                    if size_kb > 2048 and img.get("fallback_url") and img["fallback_url"] != img["url"]:
+                        logger.info(f"[setu] 原图过大({size_kb}KB)，降级: PID={img['pid']}")
+                        resp2 = await client.get(img["fallback_url"])
+                        if resp2.status_code == 200 and len(resp2.content) > 1000:
+                            logger.info(f"[setu] 降级下载成功: PID={img['pid']} {len(resp2.content)//1024}KB")
+                            return img, resp2.content
+                    elif size_kb > 8192:
+                        logger.warning(f"[setu] 跳过超大图片: PID={img['pid']} {size_kb}KB")
+                        return img, None
+                    logger.info(f"[setu] 下载成功: PID={img['pid']} {size_kb}KB")
+                    return img, resp.content
+                logger.warning(f"[setu] 下载异常: PID={img['pid']} status={resp.status_code}")
+                return img, None  # 状态码异常不重试
+            except Exception as e:
+                if _retry == 0:
+                    logger.debug(f"[setu] 下载失败，重试一次: PID={img['pid']} {type(e).__name__}")
+                    await asyncio.sleep(1)
+                else:
+                    logger.warning(f"[setu] 下载失败: PID={img['pid']} {img['url'][:60]}… → {e}")
         return img, None
 
-    async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
+    # 直接访问 i.pximg.net，走本地 Mihomo 代理，并附上 Pixiv CDN 要求的 Referer
+    _dl_headers = {"Referer": "https://www.pixiv.net/"}
+    async with httpx.AsyncClient(
+        timeout=60,
+        follow_redirects=True,
+        proxy=PROXY,
+        headers=_dl_headers,
+    ) as client:
         return list(await asyncio.gather(*[_dl(client, img) for img in images]))
 
 
@@ -570,35 +721,169 @@ async def _send_forward_or_individual(
     return failed
 
 
+async def send_setu(
+    bot: Bot,
+    group_id: int,
+    user_id: int,
+    *,
+    tags: list[str] | None = None,
+    target_count: int | None = None,
+    force_safe_mode: bool = False,
+    announce: bool = True,
+    notify: Callable[[str], Awaitable[Any]] | None = None,
+) -> dict[str, Any]:
+    """Run the real setu workflow for commands and Agent tools alike.
+
+    Permission, R18 policy and quotas are derived from the current group and
+    requester here.  Agent callers can only force the stricter non-R18 mode;
+    no caller can relax a group's configured policy through an LLM argument.
+    """
+    group_id = int(group_id)
+    user_id = int(user_id)
+    tags = [_clean for raw in (tags or []) if (_clean := str(raw).strip())][:4]
+    target = int(target_count if target_count is not None else NUM)
+    target = max(1, min(int(NUM), target))
+
+    async def send_notice(text: str) -> None:
+        if notify is not None:
+            await notify(text)
+        else:
+            await bot.send_group_msg(group_id=group_id, message=text)
+
+    if is_disallowed_setu_request(tags):
+        message = "这个主题不能处理，换成明确成年角色或普通主题吧。"
+        logger.info(f"[setu] blocked disallowed tag request group={group_id} user={user_id}")
+        await send_notice(message)
+        return {"status": "blocked", "message": message, "sent": 0}
+
+    limit_msg = _check_limit(user_id, group_id)
+    if limit_msg:
+        await send_notice(limit_msg)
+        return {"status": "limited", "message": limit_msg, "sent": 0}
+
+    allow_r18 = not force_safe_mode and group_id in R18_WHITELIST_GROUPS
+    if announce:
+        if tags:
+            await send_notice(f"正在搜索标签「{' '.join(tags)}」，注意身体哦……")
+        else:
+            await send_notice("注意身体哦，请稍等大约1分钟……")
+
+    # Consume before network work so concurrent commands cannot exceed quota.
+    _incr_limit(user_id, group_id)
+
+    used_pids: set[int] = set()
+    all_success: list[tuple[dict, str]] = []
+    for round_idx in range(3):
+        need = target - len(all_success)
+        if need <= 0:
+            break
+        logger.info(f"[setu] 第{round_idx + 1}轮: 还需 {need} 张")
+        images = (
+            await _pick_from_tag_search(tags, used_pids, need, allow_r18)
+            if tags
+            else await _pick_images(need, allow_r18)
+        )
+        if not images:
+            if round_idx == 0:
+                message = (
+                    "没有找到合适的图片……"
+                    if not tags
+                    else f"没有找到标签「{' '.join(tags)}」的高质量作品……"
+                )
+                # Agent calls deliberately suppress progress notices.  Keep a
+                # failed tag lookup equally quiet there, while manual #涩图
+                # users still receive the useful search result.
+                if announce:
+                    await send_notice(message)
+                return {"status": "not_found", "message": message, "sent": 0}
+            break
+
+        used_pids.update(int(img["pid"]) for img in images)
+        downloaded = await _download_images(images)
+        for img, _data in downloaded:
+            await _record_sent(
+                pid=img["pid"], uid=img["uid"], title=img["title"],
+                author=img["author"], url=img["url"],
+            )
+        all_success.extend(
+            (img, base64.b64encode(data).decode("ascii"))
+            for img, data in downloaded
+            if data
+        )
+
+    if not all_success:
+        message = "图片全部下载失败了……"
+        await send_notice(message)
+        return {"status": "download_failed", "message": message, "sent": 0}
+
+    failed = await _send_forward_or_individual(bot, group_id, all_success)
+    sent = len(all_success) - len(failed)
+    return {
+        "status": "sent" if sent else "send_failed",
+        "sent": sent,
+        "requested": target,
+        "tags": tags,
+    }
+
+
 # ---------- Handler ----------
 setu_cmd = on_command("#涩图", priority=5, block=True)
 
 
 @setu_cmd.handle()
 async def handle_setu(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+    async def notify(text: str) -> None:
+        await setu_cmd.send(text)
+
+    tags = [token.strip() for token in args.extract_plain_text().strip().split() if token.strip()]
+    await send_setu(
+        bot,
+        int(event.group_id),
+        int(event.user_id),
+        tags=tags,
+        notify=notify,
+    )
+
+
+# ---------- #涩图转 指令 ----------
+setu_conv_cmd = on_command("#涩图转", priority=5, block=True)
+
+
+@setu_conv_cmd.handle()
+async def handle_setu_conv(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     user_id = event.user_id
     group_id = event.group_id
 
-    cmd_arg = args.extract_plain_text().strip()
-    tags = [t.strip() for t in cmd_arg.split() if t.strip()]
+    text = args.extract_plain_text().strip()
+    if not text:
+        await setu_conv_cmd.send("用法：#涩图转 <中文描述>，例：#涩图转 雷電将軍")
+        return
+    if is_disallowed_setu_request(text):
+        await setu_conv_cmd.send("这个主题不能处理，换成明确成年角色或普通主题吧。")
+        return
 
     limit_msg = _check_limit(user_id, group_id)
     if limit_msg:
-        await setu_cmd.send(limit_msg)
+        await setu_conv_cmd.send(limit_msg)
         return
 
-    if tags:
-        tag_str = " ".join(tags)
-        await setu_cmd.send(f"正在搜索标签「{tag_str}」，注意身体哦……")
-    else:
-        await setu_cmd.send("注意身体哦，请稍等大约1分钟……")
+    allow_r18 = group_id in R18_WHITELIST_GROUPS
 
-    # 消费限额（提前扣减，防止重复触发）
+    await setu_conv_cmd.send(f"正在把「{text}」转为搜索标签，请稍等……")
+    tags = await _chinese_to_pixiv_tags(text)
+
+    # tags 一定非空（失败时兜底原文），告知用户实际使用的标签
+    tag_display = "、".join(tags)
+    if tags == [text]:
+        await setu_conv_cmd.send(f"标签：{tag_display}（直接搜索）\n注意身体哦……")
+    else:
+        await setu_conv_cmd.send(f"已转换为标签：{tag_display}\n注意身体哦……")
+
     _incr_limit(user_id, group_id)
 
     used_pids: set[int] = set()
-    all_success: list[tuple[dict, str]] = []  # (img, b64)
-    target = NUM  # 目标发送数
+    all_success: list[tuple[dict, str]] = []
+    target = NUM
     max_rounds = 3
 
     for round_idx in range(max_rounds):
@@ -606,37 +891,25 @@ async def handle_setu(bot: Bot, event: GroupMessageEvent, args: Message = Comman
         if need <= 0:
             break
 
-        logger.info(f"[setu] 第{round_idx+1}轮: 还需 {need} 张")
-
-        # 搜图
-        if tags:
-            images = await _pick_from_tag_search(tags, used_pids, need)
-        else:
-            images = await _pick_images(need)
+        images = await _pick_from_tag_search(tags, used_pids, need, allow_r18)
 
         if not images:
             if round_idx == 0:
-                await setu_cmd.send(
-                    "没有找到合适的图片……" if not tags
-                    else f"没有找到标签「{' '.join(tags)}」的高质量作品……"
-                )
+                await setu_conv_cmd.send(f"没有找到标签「{tag_display}」的高质量作品……")
                 return
             break
 
         for img in images:
             used_pids.add(img["pid"])
 
-        # 下载
         downloaded = await _download_images(images)
 
-        # 记录到 DB
         for img, _ in downloaded:
             await _record_sent(
                 pid=img["pid"], uid=img["uid"],
                 title=img["title"], author=img["author"], url=img["url"],
             )
 
-        # 组装成功的 (img, b64)
         round_success = []
         for img, img_data in downloaded:
             if img_data:
@@ -644,10 +917,9 @@ async def handle_setu(bot: Bot, event: GroupMessageEvent, args: Message = Comman
         all_success.extend(round_success)
 
     if not all_success:
-        await setu_cmd.send("图片全部下载失败了……")
+        await setu_conv_cmd.send("图片全部下载失败了……")
         return
 
-    # 发送（合并转发 → 降级逐条）
     await _send_forward_or_individual(bot, group_id, all_success)
 
 
@@ -826,7 +1098,7 @@ async def _get_or_build_ranking(
             .order_by(RankingCache.rank_pos)
         )).scalars().all()
 
-    if len(rows) >= count:
+    if len(rows) > 0:
         logger.info(f"[ranking] 命中缓存 mode={mode} date={t_date} {len(rows)} 条")
         return list(rows)
 
@@ -838,14 +1110,21 @@ async def _get_or_build_ranking(
         logger.warning("[ranking] Pixiv API 不可用")
         return []
 
-    try:
-        kwargs: dict = {"mode": mode}
-        if target_date:
-            kwargs["date"] = target_date.isoformat()
-        resp = await asyncio.to_thread(api.illust_ranking, **kwargs)
-    except Exception as e:
-        logger.error(f"[ranking] illust_ranking 失败: {e}")
-        await _refresh_pixiv_auth()
+    resp = None
+    for _attempt in range(3):
+        try:
+            kwargs: dict = {"mode": mode}
+            if target_date:
+                kwargs["date"] = target_date.isoformat()
+            resp = await asyncio.to_thread(api.illust_ranking, **kwargs)
+            break
+        except Exception as e:
+            logger.warning(f"[ranking] illust_ranking 失败 (attempt {_attempt+1}/3): {e}")
+            await _refresh_pixiv_auth()
+            if _attempt < 2:
+                await asyncio.sleep(3)
+    if resp is None:
+        logger.error("[ranking] illust_ranking 重试3次均失败")
         return []
 
     illusts = resp.get("illusts", [])
@@ -882,27 +1161,25 @@ async def _get_or_build_ranking(
     # 并发下载
     downloaded = await _download_images(candidates)
 
-    # 上传 MinIO + 写 DB
+    # 上传 MinIO + 写 DB（rank_pos 保留 Pixiv 原始排名，缺位有警告但不顶位）
     date_str = t_date.strftime("%Y%m%d")
     new_rows: list[RankingCache] = []
-    rank_pos = 0
     for img, img_data in downloaded:
         if not img_data:
-            logger.warning(f"[ranking] 下载失败，跳过 PID={img['pid']}")
+            logger.warning(f"[ranking] 第{img['rank']}名下载失败，跳过 PID={img['pid']}")
             continue
-        rank_pos += 1
 
         minio_url = ""
         if HAS_MINIO:
-            obj_name = f"{mode}/{date_str}/{rank_pos:02d}_{img['pid']}.jpg"
+            obj_name = f"{mode}/{date_str}/{img['rank']:02d}_{img['pid']}.jpg"
             minio_url = await asyncio.to_thread(_upload_to_ranking_bucket, img_data, obj_name) or ""
             if minio_url:
-                logger.info(f"[ranking] 上传 MinIO: mode={mode} rank={rank_pos} PID={img['pid']}")
+                logger.info(f"[ranking] 上传 MinIO: mode={mode} rank={img['rank']} PID={img['pid']}")
 
         row = RankingCache(
             rank_date=t_date,
             mode=mode,
-            rank_pos=rank_pos,
+            rank_pos=img["rank"],  # 保留原始排名，缺位就是缺位
             pid=img["pid"],
             uid=img["uid"],
             title=img["title"],
@@ -1192,5 +1469,52 @@ try:
         f"[ranking] 定时任务已注册: 每天 {RANKING_HOUR:02d}:{RANKING_MINUTE:02d} "
         f"推送到 {RANKING_AUTO_GROUPS}"
     )
+
+    # ---------- 定时清理：setu_record 7 天前记录 ----------
+    @scheduler.scheduled_job("cron", hour=3, minute=30, id="cleanup_setu_record")
+    async def _cleanup_setu_record():
+        cutoff = datetime.now() - timedelta(days=7)
+        async with await get_session() as session:
+            result = await session.execute(
+                SetuRecord.__table__.delete().where(SetuRecord.sent_at < cutoff)
+            )
+            await session.commit()
+            logger.info(f"[setu] 清理 setu_record: 删除 {result.rowcount} 条 7 天前记录")
+
+    # ---------- 定时清理：ranking_cache + MinIO 30 天前数据 ----------
+    @scheduler.scheduled_job("cron", hour=3, minute=45, id="cleanup_ranking_cache")
+    async def _cleanup_ranking_cache():
+        from urllib.parse import urlparse
+        cutoff_date = date.today() - timedelta(days=30)
+        async with await get_session() as session:
+            rows = (await session.execute(
+                select(RankingCache).where(RankingCache.rank_date < cutoff_date)
+            )).scalars().all()
+
+            if HAS_MINIO and rows:
+                deleted_minio = 0
+                for row in rows:
+                    if row.minio_url:
+                        try:
+                            obj_path = urlparse(row.minio_url).path.lstrip("/")
+                            # path 格式: ranking/mode/date/file.jpg，去掉 bucket 前缀
+                            parts = obj_path.split("/", 1)
+                            obj_name = parts[1] if len(parts) == 2 else obj_path
+                            await asyncio.to_thread(
+                                _ranking_minio.remove_object, RANKING_BUCKET, obj_name
+                            )
+                            deleted_minio += 1
+                        except Exception as e:
+                            logger.warning(f"[ranking] 清理 MinIO 对象失败: {e}")
+                logger.info(f"[ranking] 清理 MinIO: 删除 {deleted_minio} 个对象")
+
+            result = await session.execute(
+                RankingCache.__table__.delete().where(RankingCache.rank_date < cutoff_date)
+            )
+            await session.commit()
+            logger.info(f"[ranking] 清理 ranking_cache: 删除 {result.rowcount} 条 30 天前记录")
+
+    logger.info("[setu] 定时清理任务已注册: setu_record(每天03:30/保留7天), ranking_cache(每天03:45/保留30天)")
+
 except ImportError:
     logger.warning("[ranking] nonebot_plugin_apscheduler 未安装，定时排行榜功能不可用")

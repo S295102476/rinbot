@@ -1,29 +1,61 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+**/config.yaml
+**/config.yml
+**/.vscode/sftp.json
+*.pem
+*.key
+runtime/
+
+# Local services, media caches, and private exports
+gsuid_core_app/
+**/backups/
+**/logs/
+*.log
+*.db
+*.db-*
+*.sqlite*
+*.bak
+*.disabled
+*.bundle
+qqbot-migration/
+qq-bot-py/data/*
+!qq-bot-py/data/dutyroster/
+!qq-bot-py/data/game/
+!qq-bot-py/data/gifts/
+!qq-bot-py/data/deer/
+!qq-bot-py/data/minigames/
+qq-bot-py/data/minigames/*
+!qq-bot-py/data/minigames/idioms/
+qq-bot-py/tools/wiki_images/
+qq-bot-py/tools/image_urls.txt
+qq-bot-py/tools/migration/
+qq-bot-py/persona/**/special_users.md
+!qq-bot-py/persona/**/special_users.example.md
+
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
 .venv/
 venv/
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# 敏感配置（含 API Key、token 等，不上传）
-.vscode/sftp.json
-qq-bot-py/config.yaml
-qq-bot-py/.env
-gsuid_core_app/data/config.json
-gsuid_core_app/data/configs/
+# Frontend output; dependency locks are source files
+node_modules/
+dist/
+test-results/
+playwright-report/
+*.tsbuildinfo
 
-# 游戏数据（体积大，不需要版本管理）
-gsuid_core_app/data/
-
-# Docker 构建产物
-gsuid_core_app/venv-data/
-
-# 日志
-logs/
-*.log
-
-# 缓存
-*.lock
+# Editor state
+.idea/
+*.iml
 .DS_Store
 Thumbs.db

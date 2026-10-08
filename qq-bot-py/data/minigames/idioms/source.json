@@ -1,0 +1,18 @@
+{
+  "dataset": "THUOCL_chengyu",
+  "repository": "https://github.com/thunlp/THUOCL",
+  "commit": "a30ce79d895d01ab5132a5c74c29703ff7efb4cc",
+  "source_url": "https://raw.githubusercontent.com/thunlp/THUOCL/a30ce79d895d01ab5132a5c74c29703ff7efb4cc/data/THUOCL_chengyu.txt",
+  "upstream_blob_sha1": "44d91b3349753dc7f43b53e8cf64cda790c9ea22",
+  "sha256": "c339d5d6e37d4f8ecdcb82f2a02b7fdfc66796f0a5215155f2aff8a77e89a7eb",
+  "bytes": 166549,
+  "lines": 8519,
+  "license": "MIT",
+  "license_url": "https://github.com/thunlp/THUOCL/blob/a30ce79d895d01ab5132a5c74c29703ff7efb4cc/LICENSE",
+  "license_sha256": "db4b8cca414db4cf487b933d07a0514f77caf44f9f3d392f2bc9d7ba0d511c58",
+  "frequency": "DF (document frequency), source corpus: Sina News 2008.01-2016.11",
+  "retrieved_on": "2026-09-28",
+  "quiz_pool_size": 1000,
+  "review": "筛选四个基本汉字，去重取最大 DF，按 DF 降序选取 exclusions.tsv 排除后的前 1000 项；对首版出题池人工复核简体、普通新闻搭配和异常字形；不盲目转换简繁体。低频词仅用于匹配兼容答案，不作为首版出题主词。",
+  "citation": "韩世依, 张钰晖, 马云山, 涂存超, 郭志芃, 刘知远, 孙茂松. THUOCL：清华大学开放中文词库. 2016."
+}

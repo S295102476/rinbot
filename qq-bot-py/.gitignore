@@ -3,6 +3,7 @@ config.yaml
 config.yml
 *.env
 .env*
+!.env.example
 .vscode/sftp.json
 
 # Python

@@ -1,0 +1,21 @@
+# Merge these entries into the EXISTING minigames section in server config.yaml.
+# Do not replace other settings, especially minigames.rapfi and secrets.
+# Install/verify engine files before enabling engine.enabled.
+minigames:
+  xiangqi:
+    enabled: true
+    engine:
+      enabled: true
+      executable: data/engines/fairy-stockfish/xiangqi-c07e94a5c7cb/fairy-stockfish
+  go:
+    enabled: true
+    engine:
+      enabled: true
+      executable: data/engines/katago/1.16.3/katago
+      config_path: data/engines/katago/1.16.3/minigames.cfg
+      model_path: data/engines/katago/1.16.3/g170e-b10c128-s1141046784-d204142634.bin.gz
+  engine_limits:
+    startup_timeout: 20
+    search_timeout: 8
+    idle_seconds: 60
+    rss_limit_mib: 512

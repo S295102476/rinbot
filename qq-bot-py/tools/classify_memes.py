@@ -39,26 +39,32 @@ minio_cfg = meme_cfg["minio"]
 gemini_cfg = meme_cfg.get("gemini", {})
 
 GEMINI_API_KEY = gemini_cfg.get("api_key", "")
-GEMINI_BASE_URL = gemini_cfg.get("base_url", "https://openclawroot.com/v1")
 CLASSIFIER_MODEL = gemini_cfg.get("classifier_model", "gemini-2.5-pro")
+GEMINI_PROXY = gemini_cfg.get("proxy", "") or None
+GEMINI_NATIVE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 BUCKET = minio_cfg["bucket"]
 POOL_KEY = "meme:pool"
 TAG_PREFIX = "meme:tags:"
 EMOTION_PREFIX = "meme:emotion:"
 
-# 支持的情绪标签（中英文对照仅供提示词使用，Redis 存英文）
-EMOTIONS = [
-    "happy",      # 开心、搞笑、可爱萌
-    "sad",        # 悲伤、委屈、哭泣
-    "angry",      # 愤怒、生气、嫌弃
-    "surprised",  # 惊讶、震惊
-    "funny",      # 滑稽、搞怪、沙雕
-    "cool",       # 酷、高冷
-    "disgusted",  # 恶心、反感
-    "confused",   # 疑惑、懵圈、问号
-    "neutral",    # 无明显情绪
-]
+# 支持的情绪标签（Redis/DB 存英文）
+EMOTION_DESCRIPTIONS = {
+    "happy": "开心、可爱、甜、正向鼓励、露出笑容",
+    "sad": "悲伤、委屈、哭泣、失落、破防",
+    "angry": "愤怒、生气、急眼、暴躁、骂骂咧咧",
+    "surprised": "惊讶、震惊、瞳孔地震、难以置信",
+    "funny": "搞笑、沙雕、抽象、玩梗、喜剧效果",
+    "cool": "酷、帅、高冷、装逼、从容、有压迫感",
+    "disgusted": "嫌弃、恶心、反感、无语、看不下去",
+    "confused": "疑惑、问号、懵圈、不理解、困惑",
+    "curious": "好奇、探头、想看、围观、期待后续",
+    "calm": "平静、温和、安慰、放松、淡定",
+    "shy": "害羞、脸红、不好意思、扭捏、心动",
+    "smug": "得意、欠揍、阴阳怪气、坏笑、自信挑衅",
+    "neutral": "泛用、无明显情绪、普通反应、难以归类",
+}
+EMOTIONS = list(EMOTION_DESCRIPTIONS)
 
 # ── 客户端初始化 ───────────────────────────────────────
 minio_client = Minio(
@@ -121,43 +127,46 @@ def _classify_image(data: bytes, ext: str, retries: int = 3) -> str | None:
 
     b64 = _image_to_base64(data, ext)
     mime = "image/jpeg" if ext == "jpg" else f"image/{ext}"
-    data_uri = f"data:{mime};base64,{b64}"
-
     prompt = (
         f"请判断这张图片：\n"
         f"第一步：它是否是表情包/贴纸/搞笑反应图/颜文字/gif动图（即人们在聊天中发送用来表达情绪、调侃、互动的图）？\n"
         f"如果不是表情包（例如游戏卡牌、游戏截图、风景照片、产品图、正经内容、纯文字图片等），只回复: invalid\n"
-        f"第二步：如果是表情包，从以下标签中选最匹配的一个：{', '.join(EMOTIONS)}\n"
-        f"只回复一个英文单词，不要解释，不要标点。"
+        f"第二步：如果是表情包，只能从下面标签中选最匹配的一个，输出左侧英文标签：\n"
+        + "\n".join(f"- {k}: {v}" for k, v in EMOTION_DESCRIPTIONS.items())
+        + "\n只回复一个英文标签或 invalid，不要解释，不要标点。"
     )
 
     payload = {
-        "model": CLASSIFIER_MODEL,
-        "messages": [
+        "contents": [
             {
                 "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": data_uri}},
-                    {"type": "text", "text": prompt},
+                "parts": [
+                    {"inlineData": {"mimeType": mime, "data": b64}},
+                    {"text": prompt},
                 ],
             }
         ],
-        "max_tokens": 10,
-        "temperature": 0,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
-        "Content-Type": "application/json",
+        "generationConfig": {
+            "maxOutputTokens": 10,
+            "temperature": 0,
+            "thinkingConfig": {"thinkingBudget": 0},
+        },
     }
 
     for attempt in range(1, retries + 1):
         try:
-            with httpx.Client(timeout=90) as client:
-                resp = client.post(f"{GEMINI_BASE_URL}/chat/completions", json=payload, headers=headers)
+            with httpx.Client(timeout=90, proxy=GEMINI_PROXY) as client:
+                resp = client.post(
+                    f"{GEMINI_NATIVE_URL}/models/{CLASSIFIER_MODEL}:generateContent",
+                    params={"key": GEMINI_API_KEY},
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
                 resp.raise_for_status()
                 result = resp.json()
-                label = result["choices"][0]["message"]["content"].strip().lower()
+                parts = result.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                text = "".join(p.get("text", "") for p in parts)
+                label = text.strip().lower()
                 label = label.split()[0].rstrip(".,!?;:")
                 if label == "invalid":
                     return "invalid"

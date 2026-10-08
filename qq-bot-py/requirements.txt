@@ -2,6 +2,8 @@ nonebot2[fastapi]
 nonebot-adapter-onebot
 redis
 httpx
+requests
+curl_cffi
 pyyaml
 websockets
 minio
@@ -10,7 +12,10 @@ SQLAlchemy[asyncio]
 aiomysql
 cryptography
 PicImageSearch
-cloudscraper
 pyquery
+beautifulsoup4
 pixivpy3
 nonebot-plugin-apscheduler
+nonebot-plugin-parser[ytdlp,emosvg]
+playwright
+pyffish==0.0.90

@@ -1,0 +1,255 @@
+# Public defaults. docker compose run --rm init creates a private runtime copy.
+# Empty credentials deliberately never point to the original author's services.
+allowed_groups: []
+proxy: ""
+
+features:
+  chat: true
+  persona: true
+  meme: true
+  sign_in: true
+  minigames: true
+  console: true
+  web_search: false
+  image_gen: false
+  nai: false
+  pixiv: false
+  link_parser: false
+  gbvsr: false
+  gsuid: false
+  board_engines: false
+  development_agent: false
+
+database:
+  host: mysql
+  port: 3306
+  user: rinbot
+  password: ""
+  database: rinbot
+redis:
+  host: redis
+  port: 6379
+  db: 0
+  password: ""
+
+ai:
+  # Full Chat Completions endpoint; set model explicitly for your provider.
+  protocol: chat_completions
+  api_url: ""
+  api_key: ""
+  model: ""
+  proxy: ""
+  primary_timeout: 90
+  max_history: 100
+  persona_dir: persona
+  search_system_prompt: "结合可靠来源回答问题，不确定时明确说明。"
+  group_chat:
+    enabled_groups: []
+    at_reply_quote_rate: 0.3
+    repeat_enabled: false
+    repeat_threshold: 4
+    repeat_window_seconds: 120
+    repeat_max_chars: 120
+  # Missing vision overrides reuse the primary endpoint/key/model.
+  vision: {}
+  antigravity:
+    enabled: false
+    api_url: ""
+    api_key: ""
+    model: ""
+    protocol: openai
+    enable_search: false
+  fallback:
+    api_url: ""
+    api_key: ""
+    model: ""
+  openai_responses:
+    enabled: false
+    api_url: ""
+    api_key: ""
+    api_key_env: OPENAI_RESPONSES_API_KEY
+    model: ""
+  search:
+    provider: disabled
+    enable_backend_search: false
+
+agent:
+  enabled: true
+  mode: active
+  active_groups: []
+  provider_chain: [primary]
+  timeout_seconds: 90
+  decision_timeout_seconds: 90
+  max_iterations: 3
+  max_output_tokens: 1200
+  summary:
+    timeout_seconds: 180
+  group:
+    default_mode: at
+    only_at: true
+    mention_policy: always
+    owner_user_id: 0
+    cooldown_seconds: 20
+    burst_window_seconds: 3
+    cadence_seconds: 10
+    max_context_messages: 100
+    decision_recent_messages: 100
+    decision_direct_recent_messages: 100
+    decision_context_chars: 12000
+    decision_direct_context_chars: 12000
+    decision_concurrency: 2
+    decision_queue_timeout_seconds: 30
+    decision_backend_search: false
+    decision_images: 1
+    decision_avatars: 0
+    hourly_reply_soft_limit: 30
+    daily_decision_limit: 500
+    daily_reply_limit: 200
+    max_reply_chars: 300
+    max_total_reply_chars: 1200
+    group_overrides: {}
+    follow_up:
+      enabled: false
+      schedule_seconds: [120, 600, 1800]
+      max_per_group_per_hour: 6
+  memory:
+    enabled: true
+    episode_limit_per_group: 120
+    episode_recall_limit: 2
+    fact_limit_per_user: 40
+    fact_recall_limit: 6
+    max_facts_per_writeback: 8
+  persona:
+    active_id: eres
+    profile_dir: persona/profiles
+    shared_dir: persona/shared
+    registry: persona/registry.yaml
+    state_file: data/active_persona.json
+  affinity: {}
+  dev:
+    enabled: false
+    admin_users: []
+    workspace: .
+    sandbox_required: true
+dev_scope:
+  enabled: false
+  at_only: false
+  allowed_groups: []
+group_mode:
+  chat_only_groups: []
+  local_disabled_groups: []
+
+meme:
+  collect_rate: 0.1
+  send_on_image_rate: 0.15
+  send_on_text_rate: 0.05
+  cooldown: 60
+  max_pool_size: 1000
+  min_size_kb: 10
+  max_size_mb: 3
+  recent_size: 20
+  emotion_min_pool: 8
+  minio:
+    endpoint: minio:9000
+    access_key: ""
+    secret_key: ""
+    secure: false
+    bucket: memes
+    group_img_bucket: group-images
+    # File links require an externally reachable S3 endpoint; basic images use bytes.
+    public_endpoint: ""
+    public_secure: true
+  gemini:
+    api_key: ""
+    proxy: ""
+  review:
+    enabled: false
+    fail_closed: true
+    rules: ""
+    timeout: 30
+    doubao: {api_url: "", api_key: "", model: ""}
+    deepseek: {api_url: "", api_key: "", model: ""}
+
+sign_in:
+  affection_range: [1, 10]
+  continuous_bonus: 5
+  bg_api: https://www.dmoe.cc/random.php
+  hitokoto_api: https://v1.hitokoto.cn
+duty_roster:
+  enabled: true
+  timezone: Asia/Shanghai
+  auto_switch_hour: 2
+  avatar_dir: data/dutyroster
+deer:
+  image_path: data/deer/deer.jpg
+  allowed_groups: []
+  backfill_limit_per_month: 3
+quota:
+  default: {}
+  groups: {}
+mute_control: {}
+
+minigames:
+  enabled: true
+  allowed_groups: []
+  wait_seconds: 120
+  idle_seconds: 600
+  idiom: {enabled: true}
+  number: {enabled: true}
+  rapfi:
+    enabled: false
+    executable: data/engines/rapfi/rapfi
+    config_path: data/engines/rapfi/config.toml
+  xiangqi:
+    enabled: true
+    engine: {enabled: false, executable: data/engines/fairy-stockfish/stockfish}
+  go:
+    enabled: true
+    engine: {enabled: false, executable: data/engines/katago/katago}
+  engine_limits:
+    startup_timeout: 20
+    search_timeout: 8
+    idle_seconds: 60
+    rss_limit_mib: 512
+
+# Optional features remain off until both their flag and required credentials exist.
+gsuid:
+  enabled: false
+  ws_url: ws://127.0.0.1:8765/ws/Nonebot
+web_search:
+  api_key: ""
+  model: ""
+  proxy: ""
+  timeout: 90
+  cooldown: 10
+image_gen:
+  api_url: ""
+  api_key: ""
+  model: ""
+  timeout: 120
+  cooldown: 60
+  openai: {api_url: "", api_key: "", model: ""}
+nai:
+  token: ""
+  proxy: ""
+  daily_limit: 5
+setu:
+  admin_users: []
+  pixiv_refresh_token: ""
+  pixiv_api_proxy: ""
+  user_daily_limit: 1
+  group_daily_limit: 3
+image_search:
+  saucenao_api_key: ""
+  proxy: ""
+  r18: 0
+ranking: {}
+link_parser: {}
+gb_usage_rate:
+  proxy: ""
+  cache_dir: data/gb_usage_rate
+wiki:
+  admin_users: []
+  proxy: ""
+manga_search: {}
+jm_search: {}
