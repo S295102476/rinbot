@@ -91,9 +91,15 @@ def wait_ready(timeout=240):
 def message(text: str, message_id: int, *, at=False):
     segments = ([{"type": "at", "data": {"qq": str(BOT_ID)}}] if at else [])
     segments.append({"type": "text", "data": {"text": text}})
+    # OneBot adapters set `event.to_me` from the leading @ segment and may
+    # remove that segment from `event.message`. They preserve the wire-level
+    # raw_message, which RinBot's scope gate also reads as a fallback. Keep the
+    # CQ marker here so this fixture models a real adapter event instead of
+    # weakening the production only-@ gate.
+    raw_message = (f"[CQ:at,qq={BOT_ID}]" if at else "") + text
     return {"time": int(time.time()), "self_id": BOT_ID, "post_type": "message", "message_type": "group",
             "sub_type": "normal", "message_id": message_id, "group_id": GROUP_ID, "user_id": USER_ID,
-            "message": segments, "raw_message": text, "font": 0,
+            "message": segments, "raw_message": raw_message, "font": 0,
             "sender": {"user_id": USER_ID, "nickname": "CI User", "card": "", "sex": "unknown",
                        "age": 18, "area": "", "level": "1", "role": "owner", "title": ""}}
 
@@ -169,6 +175,49 @@ async def onebot(token: str, console: Console):
             await asyncio.gather(reader, return_exceptions=True)
 
 
+def seed_persistence(console: Console) -> dict:
+    """Use the real editor APIs after the @-only and image delivery assertions."""
+    group = next(row for row in console.request("/api/admin/groups")["items"] if row["group_id"] == GROUP_ID)
+    group_patch = {"mode": "auto", "daily_reply_limit": 123, "hourly_reply_soft_limit": 17}
+    saved_group = console.request(f"/api/admin/groups/{GROUP_ID}",
+                                  {**group_patch, "version": group["version"]}, method="PATCH")
+    assert all(saved_group[key] == value for key, value in group_patch.items())
+
+    personas = console.request("/api/admin/personas")
+    active = next(row for row in personas["items"] if row["persona_id"] == personas["active_id"])
+    document_meta = next(row for row in active["documents"] if not row["shared"] and row["name"] == "prompt.md")
+    document_path = "/api/admin/personas/documents/" + document_meta["id"]
+    original = console.request(document_path)
+    content = original["content"] + "\n\n<!-- RinBot CI: persona editor persistence -->\n"
+    saved_document = console.request(document_path,
+        {"content": content, "version": original["version"], "reason": "CI restart persistence"}, method="PUT")
+    assert saved_document["ok"] and saved_document["content"] == content
+
+    memory_payload = {"group_id": GROUP_ID, "user_id": USER_ID, "fact": "CI user prefers durable configuration.",
+                      "category": "preference", "importance": 2, "confidence": 1.0,
+                      "reason": "CI business data persistence"}
+    memory = console.request("/api/admin/memory/facts?scope=group", memory_payload)["item"]
+    assert memory["protected"] and memory["fact"] == memory_payload["fact"]
+    return {"group": group_patch, "group_version": saved_group["version"],
+            "document_path": document_path, "document_content": content,
+            "document_version": saved_document["version"], "original_version": original["version"],
+            "memory_id": memory["id"], "memory_fact": memory_payload["fact"]}
+
+
+def verify_persistence(console: Console, expected: dict) -> None:
+    group = next(row for row in console.request("/api/admin/groups")["items"] if row["group_id"] == GROUP_ID)
+    assert all(group[key] == value for key, value in expected["group"].items()), "Group settings lost after restart"
+    assert group["version"] == expected["group_version"], "Group version changed unexpectedly"
+    document = console.request(expected["document_path"])
+    assert document["content"] == expected["document_content"], "Persona edit lost after restart"
+    assert document["version"] == expected["document_version"]
+    revisions = console.request(expected["document_path"] + "/revisions")["items"]
+    assert {expected["original_version"], expected["document_version"]} <= {row["version"] for row in revisions}, "Persona revision history lost"
+    memories = console.request(f"/api/admin/memory/facts?scope=group&group_id={GROUP_ID}&user_id={USER_ID}")["items"]
+    memory = next(row for row in memories if row["id"] == expected["memory_id"])
+    assert memory["fact"] == expected["memory_fact"] and memory["protected"], "Business memory/protection lost"
+
+
 def main():
     if any((ROOT / path).exists() for path in (".env", "runtime")):
         raise SystemExit("Run smoke tests in a clean clone; existing .env/runtime will never be replaced")
@@ -214,15 +263,17 @@ def main():
             token_line = next(line for line in bot_env.read_text().splitlines() if line.startswith("ONEBOT_ACCESS_TOKEN="))
             token = token_line.split("=", 1)[1].strip("'")
             asyncio.run(onebot(token, console))
+            expected_persistence = seed_persistence(console)
             compose("exec", "-T", "bot", "python", "-c", "from pathlib import Path; Path('data/.ci-persistence').write_text('persisted'); Path('persona/.ci-persistence').write_text('persisted')")
             compose("restart", "bot")
             wait_ready()
             # Redis-backed login must survive, as must MySQL settings and named volumes.
             settings = console.request("/api/admin/settings")
             assert settings["daily_reply_limit"] == 199
+            verify_persistence(console, expected_persistence)
             compose("exec", "-T", "bot", "python", "-c", "from pathlib import Path; assert Path('data/.ci-persistence').read_text() == 'persisted'; assert Path('persona/.ci-persistence').read_text() == 'persisted'")
             compose("exec", "-T", "bot", "python", "tools/container_health.py")
-            print("PASS: fresh four-service deployment, auth, model/@ reply, roster image and restart persistence")
+            print("PASS: fresh four-service deployment, auth, model/@ reply, roster image, group/persona/memory restart persistence")
         except BaseException:
             # Logs contain only synthetic credentials and inputs in this isolated test.
             compose("logs", "--no-color", "--tail", "200", check=False)

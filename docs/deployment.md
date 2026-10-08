@@ -50,7 +50,15 @@ Access Token 填写 `runtime/bot.env` 中 `ONEBOT_ACCESS_TOKEN` 的值，不带�
 ssh -N -L 8080:127.0.0.1:8080 user@your-server
 ```
 
-保持该连接，打开 `http://127.0.0.1:8080/admin/`。如果电脑的 8080 已被占用，使用 `-L 18080:127.0.0.1:8080` 并访问本地 18080。
+保持该连接，打开 `http://127.0.0.1:8080/admin/`。如果电脑的 8080 已被占用，可将转发改为 `-L 18080:127.0.0.1:8080`，然后访问 `http://127.0.0.1:18080/admin/`。
+
+使用 18080 等其他本地端口时，需要在服务器的 `runtime/bot.env` 中为 `AGENT_CONSOLE_ORIGINS` 追加实际浏览器来源，例如：
+
+```dotenv
+AGENT_CONSOLE_ORIGINS='http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:18080'
+```
+
+在服务器仓库目录执行 `docker compose up -d --force-recreate bot` 使配置生效，再登录。来源校验会精确匹配协议、主机和端口；未添加新端口会返回 `403 Origin check failed`。如果浏览器使用 `localhost:18080`，也要添加 `http://localhost:18080`。
 
 ### HTTPS 反代
 
