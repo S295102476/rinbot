@@ -7,6 +7,7 @@ gsuid_bridge.py
 
 import asyncio
 import json
+import re
 import uuid
 from typing import Dict, List, Optional
 
@@ -74,10 +75,8 @@ async def _ws_listener():
                     data = json.loads(raw)
                     msg_id = data.get("msg_id", "")
                     content = data.get("content") or []
-                    target = f"{data.get('target_type')}:{data.get('target_id')}"
                     logger.debug(
-                        f"[GsuidBridge] 收到响应: msg_id={msg_id!r} "
-                        f"target={target} segments={len(content)}"
+                        f"[GsuidBridge] 收到响应: matched={msg_id in _pending} segments={len(content)}"
                     )
                     if msg_id and msg_id in _pending:
                         await _pending[msg_id].put(content)
@@ -88,18 +87,16 @@ async def _ws_listener():
                         # GsCore 看似发送成功，QQ 用户却永远收不到。
                         if await _send_unsolicited(data):
                             logger.info(
-                                f"[GsuidBridge] 已转发主动推送: target={target} "
-                                f"segments={len(content)}"
+                                f"[GsuidBridge] 主动推送已处理: segments={len(content)}"
                             )
                         else:
                             logger.warning(
-                                f"[GsuidBridge] 未匹配响应 msg_id={msg_id!r} "
-                                f"target={target} （当前等待数量={len(_pending)}）"
+                                f"[GsuidBridge] 未匹配响应（当前等待数量={len(_pending)}）"
                             )
                 except Exception as e:
-                    logger.warning(f"[GsuidBridge] 消息解析异常: {e}")
+                    logger.warning(f"[GsuidBridge] 消息解析异常: {type(e).__name__}")
         except Exception as e:
-            logger.warning(f"[GsuidBridge] 连接断开: {e}，5秒后重连...")
+            logger.warning(f"[GsuidBridge] 连接断开: {type(e).__name__}，5秒后重连...")
             if _connected is not None:
                 _connected.clear()
             _ws = None
@@ -189,7 +186,7 @@ async def _forward(bot: Bot, event: MessageEvent, msg_id: str) -> bool:
         await _ws.send(json.dumps(msg, ensure_ascii=False).encode("utf-8"))
         return True
     except Exception as e:
-        logger.warning(f"[GsuidBridge] 发送消息失败: {e}")
+        logger.warning(f"[GsuidBridge] 发送消息失败: {type(e).__name__}")
         return False
 
 
@@ -225,16 +222,23 @@ _ERROR_KEYWORDS = (
     "渲染失败", "执行失败", "Playwright", "BrowserType",
     "doesn't exist", "playwright install", "HTML渲染",
     "Traceback", "Exception",
-    "请求错误", "错误码",
+    "请求错误", "请求失败", "连接失败", "错误码",
+    "unauthorized", "forbidden", "authentication failed",
 )
 
 
 def _is_tech_error(content: list) -> bool:
     """判断一条响应是否为技术性错误（不应转发给用户）"""
     for seg in content:
+        if not isinstance(seg, dict):
+            continue
+        if seg.get("type") == "node" and isinstance(seg.get("data"), list):
+            if _is_tech_error(seg["data"]):
+                return True
         if seg.get("type") == "text":
             text = str(seg.get("data", ""))
-            if any(kw in text for kw in _ERROR_KEYWORDS):
+            if (any(kw.casefold() in text.casefold() for kw in _ERROR_KEYWORDS)
+                    or re.search(r"\berror\b|\bHTTP\s*[45]\d\d\b", text, re.IGNORECASE)):
                 return True
     return False
 
@@ -312,16 +316,17 @@ async def _send_unsolicited(data: dict) -> bool:
         # 该帧已被有意处理，避免监听器把它记成“未匹配响应”。
         return True
 
-    parts = _extract_segments(data.get("content") or [])
+    content = data.get("content") or []
+    if _is_tech_error(content):
+        logger.warning("[GsuidBridge] 已屏蔽主动推送中的技术性错误")
+        return True
+    parts = _extract_segments(content)
     if not parts:
         return False
 
     bot = _select_bot(data)
     if bot is None:
-        logger.warning(
-            "[GsuidBridge] 主动推送找不到对应的 NoneBot 实例: "
-            f"bot_id={data.get('bot_id')!r} bot_self_id={data.get('bot_self_id')!r}"
-        )
+        logger.warning("[GsuidBridge] 主动推送找不到对应的 NoneBot 实例")
         return False
 
     message = Message(parts)
@@ -333,7 +338,7 @@ async def _send_unsolicited(data: dict) -> bool:
         return True
     except Exception as e:
         logger.warning(
-            f"[GsuidBridge] 主动推送发送失败 target={target_type}:{target_id}: {e}"
+            f"[GsuidBridge] 主动推送发送失败: {type(e).__name__}"
         )
         return False
 
@@ -347,11 +352,14 @@ async def _send_results(bot: Bot, event: MessageEvent, results: List[List]):
         return
     for content in results:
         if _is_tech_error(content):
-            logger.warning(f"[GsuidBridge] 屏蔽技术性错误消息: {content}")
+            logger.warning("[GsuidBridge] 已屏蔽技术性错误消息")
             continue
         parts = _extract_segments(content)
         if parts:
-            await bot.send(event, Message(parts))
+            try:
+                await bot.send(event, Message(parts))
+            except Exception as exc:
+                logger.warning(f"[GsuidBridge] 响应发送失败: {type(exc).__name__}")
 
 
 # ──────────────────────────────────────────────

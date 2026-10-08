@@ -438,7 +438,7 @@ async def call_provider_with_policy_retry(call, messages: list, provider: str) -
     try:
         return _require_provider_reply(reply, provider)
     except RetryableProviderResponse as exc:
-        logger.warning(f"[ai_chat] {exc}，精简上下文重试一次")
+        logger.warning(f"[ai_chat] response={type(exc).__name__}，精简上下文重试一次")
         retry_messages = _compact_policy_retry_messages(messages)
         retry_reply = await call(retry_messages)
         return _require_provider_reply(retry_reply, provider)
@@ -571,7 +571,7 @@ async def _create_chat_tables():
             asyncio.create_task(upload_persona_files(MODEL))
             start_refresh_task(MODEL)
         except Exception as e:
-            logger.warning(f"[ai_chat] persona cache 任务启动失败: {e}")
+            logger.warning(f"[ai_chat] persona cache 任务启动失败: {type(e).__name__}")
 
 
 async def record_bot_reply(group_id: int, content: str) -> None:
@@ -615,7 +615,7 @@ async def record_bot_reply(group_id: int, content: str) -> None:
         except Exception as cache_exc:
             logger.debug(f"[context_cache] bot reply cache failed: {type(cache_exc).__name__}")
     except Exception as e:
-        logger.debug(f"[ai_chat] record_bot_reply 失败: {e}")
+        logger.debug(f"[ai_chat] record_bot_reply 失败: {type(e).__name__}")
 
 
 # ---------- 运行时模型切换 ----------
@@ -890,7 +890,7 @@ async def handle_chat(bot: Bot, event: GroupMessageEvent):
                 message = (message + "\n" + fwd_summary).strip() if message else fwd_summary
                 logger.info(f"[ai_chat] 展开转发 id={fwd_id}，共 {len(lines)} 条")
         except Exception as fwd_err:
-            logger.warning(f"[ai_chat] 获取合并转发内容失败: {fwd_err}")
+            logger.warning(f"[ai_chat] 获取合并转发内容失败: {type(fwd_err).__name__}")
         break  # 只处理第一个 forward segment
 
     empty_direct_at = False
@@ -1248,17 +1248,27 @@ async def _call_fallback(messages: list) -> str:
                 "messages": messages,
             },
         )
+        if resp.status_code != 200:
+            raise RuntimeError(f"Fallback HTTP {resp.status_code}")
         if not resp.content:
             _log_err("ai_chat/fallback", f"HTTP {resp.status_code} 空 body")
             raise RuntimeError(f"Fallback 返回空 body (HTTP {resp.status_code})")
         try:
             data = resp.json()
-        except Exception:
-            _log_err("ai_chat/fallback", f"HTTP {resp.status_code} 非JSON: {resp.text[:200]}")
-            raise
+        except (ValueError, TypeError) as exc:
+            _log_err("ai_chat/fallback", f"HTTP {resp.status_code} invalid_json={type(exc).__name__}")
+            raise RuntimeError(f"Fallback invalid JSON (HTTP {resp.status_code})") from None
+        if not isinstance(data, dict):
+            raise RuntimeError("Fallback returned an invalid response object")
         if "error" in data:
-            raise RuntimeError(f"Fallback API error: {data['error']}")
-        return data["choices"][0]["message"]["content"].strip()
+            raise RuntimeError(f"Fallback API error (HTTP {resp.status_code})")
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            raise RuntimeError("Fallback returned an invalid Chat Completions response") from None
+        if not isinstance(content, str) or not content.strip():
+            raise RuntimeError("Fallback returned empty text")
+        return content.strip()
 
 
 async def _call_openai_responses(messages: list) -> str:
@@ -1398,7 +1408,7 @@ async def chat(user_id: int, nickname: str, user_message: str, group_id: int = N
                     await session.execute(delete(ChatHistory).where(ChatHistory.id.in_(old_ids)))
                     await session.commit()
         except Exception as e:
-            logger.warning(f"[ai_chat] 历史存储失败: {e}")
+            logger.warning(f"[ai_chat] 历史存储失败: {type(e).__name__}")
         finally:
             await session.close()
 
@@ -1479,7 +1489,7 @@ async def chat_with_vision(user_id: int, nickname: str, user_message: str,
                 content.append({"type": "image_url", "image_url": {"url": data_url}})
                 logger.debug(f"[ai_chat/vision] 图片已下载转 base64 ({len(img_resp.content)//1024}KB)")
             except Exception as e:
-                logger.warning(f"[ai_chat/vision] 图片下载失败，跳过: {e}")
+                logger.warning(f"[ai_chat/vision] 图片下载失败，跳过: {type(e).__name__}")
     if not content:
         # 所有图片下载失败，降级为普通文字对话
         return await chat(user_id, nickname, user_message or "你看到我发图了吗", group_id)
@@ -1551,4 +1561,4 @@ async def _extract_memory(user_id: int, user_message: str):
         finally:
             await session.close()
     except Exception as e:
-        logger.debug(f"[ai_chat] 记忆提取失败: {e}")
+        logger.debug(f"[ai_chat] 记忆提取失败: {type(e).__name__}")
