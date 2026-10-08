@@ -22,4 +22,6 @@ RinBot 的原创代码使用 [GPL-3.0-only](LICENSE)。下面的第三方软件�
 
 感谢 NoneBot2、OneBot 适配器、FastAPI、SQLAlchemy、Redis、MinIO、Pillow、Playwright、React、Vite、Recharts、Lucide 等项目。精确依赖版本以 Python 锁定文件与前端 `package-lock.json` 为准，许可证请查看对应依赖发行物。
 
+Compose 的 MinIO 服务从 [上游 `RELEASE.2025-10-15T17-29-55Z` 源码](https://github.com/minio/minio/tree/RELEASE.2025-10-15T17-29-55Z) 构建（提交 `9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a`），遵循其 [GNU AGPL v3 许可证](https://github.com/minio/minio/blob/RELEASE.2025-10-15T17-29-55Z/LICENSE)。RinBot 主项目许可证不替代该组件的许可证。
+
 Docker 镜像包含系统组件、中文字体及浏览器运行组件，它们遵循各自发行包许可。重新发布镜像或依赖时应同时保留相关声明。

@@ -118,13 +118,18 @@ def test_missing_files_fail_closed(tmp_path):
     assert str(tmp_path.resolve()) in str(failure.value)
 
 
-def test_cross_platform_line_endings_do_not_disable_valid_bank(tmp_path):
+@pytest.mark.parametrize("line_ending", [b"\n", b"\r\n"], ids=["lf", "crlf"])
+def test_cross_platform_line_endings_do_not_disable_valid_bank(tmp_path, line_ending):
     source = Path(__file__).parents[1] / "data/minigames/idioms"
     target = tmp_path / "data/minigames/idioms"
     shutil.copytree(source, target)
-    for filename in ("THUOCL_chengyu.txt", "LICENSE"):
+    for filename in idioms.DATA_FILES:
         path = target / filename
-        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        # A Windows checkout may already use CRLF. Normalize first so this
+        # creates valid CRLF, never CRCRLF (which contains real blank lines).
+        canonical = path.read_bytes().replace(b"\r\n", b"\n")
+        path.write_bytes(canonical.replace(b"\n", line_ending))
+        assert b"\r\r\n" not in path.read_bytes()
     assert idioms.load_default(tmp_path).pool_size == 1000
 
 

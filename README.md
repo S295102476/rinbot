@@ -49,7 +49,7 @@ RinBot 将 QQ 群聊中的日常陪伴和后台管理放在一起：群友可以
 准备好模型接口地址、API Key、模型名称、管理员 QQ、允许使用的群号，以及一个至少 12 位的控制台密码。QQ 登录由你自己的 OneBot v11 客户端完成。
 
 ```bash
-git clone https://github.com/a295012476-prog/rinbot.git
+git clone https://github.com/S295102476/rinbot.git
 cd rinbot
 docker compose run --rm init
 docker compose up -d --build

@@ -1,7 +1,7 @@
 import importlib.util
 from io import BytesIO
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import pytest
 
 spec=importlib.util.spec_from_file_location("minigame_render_test",Path(__file__).parents[1]/"plugins/minigames/render.py")
@@ -255,16 +255,47 @@ def test_idiom_long_scoreboard_and_simultaneous_bad_last_result_do_not_leak(monk
     assert "前八名" in combined
 
 
-def test_idiom_multisolution_result_wraps_every_answer_and_grows(monkeypatch):
-    text = collect_text(monkeypatch)
+@pytest.mark.parametrize("font_source", ["system", "fallback"])
+def test_idiom_multisolution_result_wraps_every_answer_and_grows(monkeypatch, font_source):
+    if font_source == "fallback":
+        monkeypatch.setattr(render, "_font", lambda size, bold=False: ImageFont.load_default(size=size))
     value = idiom_state()
-    before = Image.open(BytesIO(render.render_idiom(value))).height
+    with Image.open(BytesIO(render.render_idiom(value))) as image:
+        before = image.height
+
+    # Inspect text that is actually drawn, rather than the unwrapped input
+    # passed to _paragraph. Font metrics differ across Windows/Linux/fallback.
+    drawn, cards = [], []
+    original_text, original_card = ImageDraw.ImageDraw.text, render._card
+    def record_text(draw, xy, text, *args, **kwargs):
+        drawn.append((str(text), draw.textbbox(xy, text, font=kwargs.get("font"))))
+        return original_text(draw, xy, text, *args, **kwargs)
+    def record_card(draw, bounds, **kwargs):
+        cards.append(bounds)
+        return original_card(draw, bounds, **kwargs)
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", record_text)
+    monkeypatch.setattr(render, "_card", record_card)
+
     answers = [chr(0x4e00 + index) * 4 for index in range(50)]
     value["last_result"]["answers"] = answers
     with Image.open(BytesIO(render.render_idiom(value))) as image:
-        assert image.height > before + 150
-    combined = "\n".join(text)
-    assert all(answer in combined for answer in answers)
+        assert image.height > before
+        answer_start = next(i for i, (text, _) in enumerate(drawn) if text.startswith("答案："))
+        score_start = next(i for i, (text, _) in enumerate(drawn) if text == "挑战统计")
+        answer_lines = drawn[answer_start:score_start]
+        assert len(answer_lines) > 1
+        assert "".join(text for text, _ in answer_lines) == "答案：" + " / ".join(answers)
+        first_box = answer_lines[0][1]
+        result_card = next(bounds for bounds in cards
+                           if bounds[0] <= first_box[0] < bounds[2]
+                           and bounds[1] <= first_box[1] < bounds[3])
+        for _, (left, top, right, bottom) in answer_lines:
+            assert result_card[0] <= left < right <= result_card[2]
+            assert result_card[1] <= top < bottom <= result_card[3]
+        assert all(previous[1][3] <= following[1][1]
+                   for previous, following in zip(answer_lines, answer_lines[1:]))
+        assert result_card[3] < drawn[score_start][1][1]
+        assert max(box[3] for _, box in drawn) < image.height
 
 
 def test_idiom_bot_name_snapshot_precedes_persona_name(monkeypatch):

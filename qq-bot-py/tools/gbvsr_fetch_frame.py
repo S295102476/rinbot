@@ -97,26 +97,8 @@ def _resolve_character(raw: str) -> str:
 
 
 def _characters_from_docs() -> list[str]:
-    docs_path = Path("docs/gbf.md")
-    if not docs_path.exists():
-        return []
-    out: list[str] = []
-    seen: set[str] = set()
-    for line in docs_path.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^\s*([^:：]+)\s*[:：]\s*(.+?)\s*[。.]?\s*$", line)
-        if not m:
-            continue
-        name = resolve_character(m.group(1).strip()) or normalize_canonical(m.group(1).strip())
-        key = compact(name)
-        if key and key not in seen:
-            seen.add(key)
-            out.append(name)
-    for name in CHARACTER_NAMES:
-        key = compact(name)
-        if key and key not in seen:
-            seen.add(key)
-            out.append(name)
-    return out
+    """Legacy helper name; character metadata is versioned independently of docs."""
+    return list(CHARACTER_NAMES)
 
 
 def _frame_json_path(character: str) -> Path:

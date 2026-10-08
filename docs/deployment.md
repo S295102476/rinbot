@@ -20,6 +20,8 @@ docker compose ps
 
 四个常驻服务为 `bot`、`mysql`、`redis`、`minio`，`init` 是一次性工具服务。数据保存于 `bot_data`、`bot_persona`、`mysql_data`、`redis_data`、`minio_data` 命名卷，实际卷名带 Compose 项目前缀。
 
+MinIO 社区版现由上游仅提供源码。Compose 会自动使用 Go 1.24.8 构建固定版本 `RELEASE.2025-10-15T17-29-55Z`，无需手动安装 Go；首次构建需要下载 Go 依赖并编译，因此会比后续启动更久。此版本和构建方式依据 [MinIO 官方发布说明](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z)，不依赖已经无法拉取的旧公共 MinIO 镜像。
+
 `bot_data` 保存运行状态和本地资源，`bot_persona` 保存已编辑人格；初次启动从镜像种子资源初始化，重建镜像后继续使用已有卷。更改仓库中的人格种子不会自动覆盖已运行的人格文档。
 
 ## 接入 OneBot v11
@@ -79,6 +81,8 @@ location / {
 4. 发送 `#签到`、`#值班表`，确认图片能在 QQ 中显示。
 5. 修改一项群设置，然后 `docker compose restart bot`，确认设置、人格与业务数据仍在。
 6. 不设置外部扩展凭据时，基础功能持续运行。不要将接口探活成功等同于真实 QQ 接入验收。
+
+部署自动化使用模拟 OneBot 与模型验证接入、发送和持久化路径。真实 QQ 登录、群内 @ 回复及客户端图片显示仍需要按上述步骤确认；首版当前验证状态见[更新说明](releases/first-public-release.md#验收记录)。
 
 ## 备份与更新
 

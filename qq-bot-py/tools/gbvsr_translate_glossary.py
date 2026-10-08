@@ -19,7 +19,7 @@ GLOSSARY_PATH = Path("data/gbvsr/notes/_glossary.json")
 # displayable meaning and must not become a Chinese note in downstream files.
 NON_NOTES = {"2.", ": 4, 3"}
 
-# Character names stay in Dustloop's English form, matching docs/gbf.md.
+# Character names stay in Dustloop's English form, matching gbvsr_characters.json.
 NAME_FIXES = {
     "贝阿朵莉切": "Beatrix",
     "贝阿朵丽丝": "Beatrix",

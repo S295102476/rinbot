@@ -12,6 +12,26 @@ RUN npm ci
 COPY qq-bot-py/console/ ./
 RUN npm run build
 
+# MinIO Community Edition stopped publishing a public Docker image. Build the
+# pinned upstream source release instead of pulling an unresolvable registry
+# tag. The release includes security fixes and declares Go 1.24.8.
+FROM golang:1.24.8-bookworm AS minio-builder
+ENV CGO_ENABLED=0 GO111MODULE=on
+RUN go install github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z
+
+FROM debian:bookworm-slim AS minio-runtime
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=minio-builder /go/bin/minio /usr/local/bin/minio
+RUN useradd --system --uid 1000 --home-dir /data minio \
+    && mkdir -p /data && chown minio:minio /data
+USER minio
+VOLUME ["/data"]
+EXPOSE 9000 9001
+ENTRYPOINT ["minio"]
+CMD ["server", "/data", "--console-address", ":9001"]
+
 FROM python:3.11-slim-bookworm AS bot
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
