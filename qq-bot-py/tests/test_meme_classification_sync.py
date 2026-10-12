@@ -16,6 +16,21 @@ classifier = importlib.import_module("tools.classify_memes")
 syncer = importlib.import_module("tools.sync_memes_db")
 
 
+def test_syncer_uses_same_synthetic_configuration_as_classifier():
+    assert syncer.CONFIG == classifier.config
+    assert syncer.CONFIG["redis"]["host"] == "127.0.0.1"
+    assert syncer.CONFIG["redis"]["port"] == 1
+    assert syncer.CONFIG["meme"]["minio"]["secret_key"] == "test-secret-key"
+    assert syncer.CONFIG_PATH.resolve().parent != syncer.ROOT
+
+
+def test_syncer_and_classifier_preserve_redis_auth_and_selected_database():
+    for client, config in ((syncer.rds, syncer.CONFIG), (classifier.rds, classifier.config)):
+        options = client.connection_pool.connection_kwargs
+        assert options["password"] == config["redis"]["password"] == "test-redis-password"
+        assert options["db"] == config["redis"]["db"]
+
+
 class Adapter:
     def __init__(self, engine):
         self.session = Session(engine, expire_on_commit=False)

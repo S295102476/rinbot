@@ -84,6 +84,8 @@ minio_client = Minio(
 rds = redis_lib.Redis(
     host=config["redis"]["host"],
     port=config["redis"]["port"],
+    password=config["redis"].get("password") or None,
+    db=int(config["redis"].get("db", 0)),
     decode_responses=True,
 )
 

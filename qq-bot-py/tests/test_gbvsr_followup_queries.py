@@ -12,11 +12,11 @@ with patch("sqlalchemy.ext.asyncio.create_async_engine"):
     from plugins import gbvsr_frame as frame
 
 
-ROOT = Path(__file__).resolve().parents[1]
-
-
 def character_data(name):
-    return json.loads((ROOT / "data/gbvsr/frame" / f"{name.lower()}Frame2.local.json").read_text(encoding="utf-8"))
+    # Minimal published fixture: aliases require move inputs, not private GBVSR
+    # downloads, translated notes or the multi-gigabyte image collection.
+    path = Path(__file__).resolve().parent / "fixtures/gbvsr" / f"{name.lower()}Frame2.local.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 class FollowupQueryTests(unittest.TestCase):

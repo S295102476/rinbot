@@ -1,0 +1,12 @@
+{
+  "character": "Wilnas",
+  "source": "synthetic follow-up query fixture; no scraped media or frame values",
+  "rows": [
+    {"section": "Normal Moves", "row": {"Input": "5L"}},
+    {"section": "Unique Actions", "row": {"Input": "5U"}},
+    {"section": "Unique Actions", "row": {"Input": "66"}},
+    {"section": "Unique Actions", "row": {"Input": "66~L"}},
+    {"section": "Unique Actions", "row": {"Input": "66~M"}},
+    {"section": "Unique Actions", "row": {"Input": "66~H"}}
+  ]
+}

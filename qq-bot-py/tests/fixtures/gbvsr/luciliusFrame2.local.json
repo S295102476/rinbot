@@ -1,0 +1,15 @@
+{
+  "character": "Lucilius",
+  "source": "synthetic follow-up query fixture; no scraped media or frame values",
+  "rows": [
+    {"section": "Normal Moves", "row": {"Input": "5L"}},
+    {"section": "Normal Moves", "row": {"Input": "66L"}},
+    {"section": "Normal Moves", "row": {"Input": "66M"}},
+    {"section": "Normal Moves", "row": {"Input": "66H"}},
+    {"section": "Unique Actions", "row": {"Input": "5U"}},
+    {"section": "Unique Actions", "row": {"Input": "5U~U"}},
+    {"section": "Unique Actions", "row": {"Input": "5U~L"}},
+    {"section": "Unique Actions", "row": {"Input": "5U~M"}},
+    {"section": "Unique Actions", "row": {"Input": "5U~H"}}
+  ]
+}

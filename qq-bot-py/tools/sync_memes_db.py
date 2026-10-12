@@ -25,7 +25,12 @@ sys.path.insert(0, str(ROOT))
 
 from plugins.db import MemeItem, get_session, engine, Base  # noqa: E402
 
-CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
+# Match plugins/classify_memes: an explicit working directory supplies config.
+# Tests use a temporary synthetic config, never the author's source-tree file.
+CONFIG_PATH = Path("config.yaml")
+if not CONFIG_PATH.exists():
+    CONFIG_PATH = ROOT / "config.yaml"
+CONFIG = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 MEME_CFG = CONFIG["meme"]
 MINIO_CFG = MEME_CFG["minio"]
 BUCKET = MINIO_CFG["bucket"]
@@ -48,6 +53,8 @@ minio_client = Minio(
 rds = redis_lib.Redis(
     host=CONFIG["redis"]["host"],
     port=CONFIG["redis"]["port"],
+    password=CONFIG["redis"].get("password") or None,
+    db=int(CONFIG["redis"].get("db", 0)),
     decode_responses=True,
 )
 
