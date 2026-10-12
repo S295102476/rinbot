@@ -136,9 +136,10 @@ def settings_changed() -> None:
     runtime = getattr(module, "RUNTIME", None)
     if runtime is None:
         return
+    from .agent_game_tools import is_natural_request
     for group_id, items in list(runtime._batch_queues.items()):
         runtime._batch_queues[group_id] = [item for item in items
-            if scope_allows(group_id, direct_at=real_at(item[0], item[1]))]
+            if scope_allows(group_id, direct_at=real_at(item[0], item[1]) or is_natural_request(item[0].self_id, item[1]))]
         if not scope_allows(group_id, direct_at=True):
             task = runtime._batch_tasks.get(group_id)
             if task is not None and not task.done():

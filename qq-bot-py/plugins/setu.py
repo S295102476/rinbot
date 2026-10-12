@@ -225,7 +225,8 @@ async def _refresh_pixiv_auth():
 @get_driver().on_startup
 async def _create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
     logger.info("[setu] 数据表已就绪")
     # 后台预热 Pixiv API，不阻塞启动
     asyncio.create_task(_get_pixiv_api())

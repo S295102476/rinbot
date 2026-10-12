@@ -350,7 +350,8 @@ async def _apply_today_if_due(now: datetime | None = None) -> None:
 @get_driver().on_startup
 async def _startup() -> None:
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
     if ENABLED:
         try:
             await _apply_today_if_due()

@@ -162,9 +162,21 @@ def _normalize_fullwidth_hash(event: GroupMessageEvent) -> None:
 
 @event_preprocessor
 async def _development_scope_gate(_bot: Bot, event: Event):
-    from .minigame_gate import capture, allows
+    from .minigame_gate import capture, capture_agent, is_natural_request, allows
     game_arrival = capture(int(_bot.self_id), event)
+    capture_agent(int(_bot.self_id), event)
     console_runtime.observe_incoming(_bot, event)
+    if isinstance(event, GroupMessageEvent):
+        try:
+            from .agent_policy import AgentPolicy
+            from .agent_memory_v2 import MEMORY_V2
+            group = int(event.group_id)
+            if console_runtime.group_enabled(group, AgentPolicy.from_config(_config).group_enabled(group)) and MEMORY_V2.enabled(group):
+                # Learning must see ordinary conversation in an @-only group;
+                # this does not enqueue a chat reply or relax any reply gate.
+                await MEMORY_V2.ingest_event(_bot, event)
+        except Exception as exc:
+            logger.warning(f"[agent_memory] ingress_failed error={type(exc).__name__}")
     if ALLOW_PRIVATE and isinstance(event, PrivateMessageEvent):
         return
     group_id = getattr(event, "group_id", None)
@@ -192,6 +204,11 @@ async def _development_scope_gate(_bot: Bot, event: Event):
             return
         text = event.get_plaintext().strip()
         mentions_bot = _message_mentions_bot(_bot, event)
+        # A narrow, explicit game request may reach the Agent in at-only mode.
+        # Treat it like a command without changing the event's real @ status.
+        if (is_natural_request(int(_bot.self_id), event)
+                and _scope_allows_group(group_id, text, mentions_bot=True)):
+            return
         has_parseable_link = _message_has_parseable_link(event)
         local_command = _is_local_command_event(event)
         if has_parseable_link:

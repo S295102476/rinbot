@@ -1,4 +1,5 @@
 import unittest
+import json
 
 import httpx
 
@@ -78,6 +79,29 @@ class ResponsesTests(unittest.IsolatedAsyncioTestCase):
 
     def test_empty_response_text(self):
         self.assertEqual(parse_responses_text({"output": []}), "")
+
+    def test_native_function_call_normalized_before_narrative_text(self):
+        data = {"output_text": "I will open a game", "output": [
+            {"type": "function_call", "call_id": "call_fixture", "name": "minigame_start",
+             "arguments": '{"source_message_id":12,"game":"gomoku"}', "status": "completed"},
+            {"type": "message", "content": [{"type": "output_text", "text": "Unverified success"}]},
+        ]}
+        result = json.loads(parse_responses_text(data))
+        self.assertEqual(result, {"action": "tool", "tool_calls": [{"name": "minigame_start",
+            "arguments": {"source_message_id": 12, "game": "gomoku"}}]})
+
+    def test_native_tool_arguments_invalid_are_rejected_without_echo(self):
+        for arguments in ('private credential = invalid json', '[]', 'null', None, 3):
+            with self.subTest(arguments=arguments):
+                with self.assertRaises(ResponsesAPIError) as failure:
+                    parse_responses_text({"output": [{"type": "function_call", "name": "tool", "arguments": arguments}]})
+                self.assertNotIn("private credential", str(failure.exception))
+
+    def test_native_tools_do_not_confuse_hosted_search_or_incomplete_calls(self):
+        self.assertEqual(parse_responses_text({"output_text": "Search result", "output": [
+            {"type": "web_search_call", "status": "completed"}]}), "Search result")
+        with self.assertRaises(ResponsesAPIError):
+            parse_responses_text({"output": [{"type": "function_call", "name": "tool", "arguments": "{}", "status": "incomplete"}]})
 
     async def test_non_object_json_is_explicit(self):
         def handler(_: httpx.Request) -> httpx.Response:

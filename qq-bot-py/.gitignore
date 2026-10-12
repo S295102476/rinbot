@@ -20,3 +20,7 @@ logs/
 
 # 本地工具输出
 tools/wiki_images/
+
+# Private Agent task snapshots and durable message fallback
+data/developer-tasks/
+data/agent-memory-inbox/

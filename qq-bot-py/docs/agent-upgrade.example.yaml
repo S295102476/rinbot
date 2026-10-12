@@ -1,0 +1,79 @@
+# Merge into config.yaml; this is an additive example, not a private config copy.
+# Replace 987654321 with your development group before enabling features.
+agent:
+  group:
+    decision_recent_messages: 60
+    decision_direct_recent_messages: 60
+    decision_context_chars: 12000
+    decision_direct_context_chars: 12000
+    decision_queue_timeout_seconds: 15
+  model_routes:
+    group_chat:
+      provider: primary
+      protocol: openai
+      timeout: 90
+      max_output_tokens: 4000
+      concurrency: 2
+    memory:
+      provider: primary
+      protocol: openai
+      timeout: 180
+      max_output_tokens: 8000
+      concurrency: 1
+    emotion:
+      provider: primary
+      protocol: openai
+      timeout: 15
+    meme:
+      provider: primary
+      protocol: openai
+      timeout: 30
+    embedding:
+      enabled: false
+      provider: google
+      protocol: embedding
+      model: gemini-embedding-2
+      max_output_tokens: 768  # fixed vector dimension, not generated text
+      timeout: 30
+    expert:
+      enabled: false
+      provider: openai_responses
+      protocol: responses
+      timeout: 180
+      max_output_tokens: 6000
+      daily_limit: 20
+    development:
+      enabled: false
+      provider: openai_responses
+      protocol: responses
+      timeout: 180
+      max_output_tokens: 12000
+      concurrency: 1
+  memory_v2:
+    enabled: true
+    groups: [987654321]
+    embeddings_enabled: false
+  game_tools:
+    enabled: true
+    groups: [987654321]
+  expert:
+    enabled: false
+    groups: [987654321]
+    daily_limit: 20
+  dev:
+    enabled: false
+    workspace: .
+    task_storage: data/developer-tasks
+    check_image: rinbot-dev-checks:local
+    # Keep the actual administrator whitelist from your existing private config.
+
+# Primary routes inherit ai.api_url / ai.api_key / ai.model.
+# To use AG, configure ai.antigravity and explicitly select provider/model.
+# Optional GPT routes reuse ai.openai_responses credentials and model.
+# Development also requires features.development_agent: true.
+# Google embeddings can reuse meme.gemini.api_key; prefer a dedicated env var:
+ai:
+  google:
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key_env: GOOGLE_EMBEDDING_API_KEY
+    # proxy: http://127.0.0.1:7890

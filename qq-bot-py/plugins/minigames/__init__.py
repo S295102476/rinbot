@@ -44,9 +44,11 @@ ALLOWED_GROUPS = {int(g) for g in _cfg.get("allowed_groups", [])}
 BLOCKED_GROUPS = {int(g) for key in ("chat_only_groups", "local_disabled_groups", "gb_frame_only_groups")
                   for g in _mode.get(key, [])}
 ADMIN_USERS = {int(u) for u in ((_config.get("agent") or {}).get("dev") or {}).get("admin_users", [])}
+_agent_games = (_config.get("agent") or {}).get("game_tools") or {}
 gate.configure(enabled=ENABLED, allowed_groups=ALLOWED_GROUPS, blocked_groups=BLOCKED_GROUPS,
                disabled_games={game for game in ("idiom", "number", "xiangqi", "go")
-                               if not bool((_cfg.get(game) or {}).get("enabled", True))})
+                               if not bool((_cfg.get(game) or {}).get("enabled", True))},
+               agent_enabled=_agent_games.get("enabled", True), agent_groups=_agent_games.get("groups") or ())
 SERVICE = GameService(SQLStore(), publish=gate.publish, allowed=gate.allows,
     wait_seconds=max(30, min(600, int(_cfg.get("wait_seconds", 120)))),
     idle_seconds=max(60, min(3600, int(_cfg.get("idle_seconds", 600)))),
@@ -392,76 +394,7 @@ async def _handle_game(bot: Bot, event: GroupMessageEvent):
         if command.action == "menu":
             await _send_menu(bot, event, command.game)
             return
-        if not SERVICE.ready:
-            raise GameError("小游戏存储尚未就绪，请稍后再试或联系管理员查看启动日志")
-        if command.action in {"answer", "guess", "cancel", "skip"}:
-            await gate.wait_answer_turn(bot_id, group_id, event.message_id)
-        active = SERVICE.states.get((bot_id, group_id))
-        idiom_start = command.action == "start" and command.game == "idiom"
-        idiom_continue = (active and active["game"] == "idiom" and active["status"] == "active"
-                          and command.action not in {"cancel", "start"})
-        if SERVICE.idiom_enabled and (idiom_start or idiom_continue):
-            loaded = await _ensure_idiom_bank()
-            if not loaded and idiom_start:
-                raise GameError(_idiom_last_error)
-        if command.action == "start" and command.game == "gomoku" and command.mode == "bot" and command.difficulty == "serious":
-            active = SERVICE.states.get((bot_id, group_id))
-            if active and active["status"] != "ended" and active["expires_at"] > SERVICE.clock():
-                raise GameError("本群已有对局，请先结束或等待完成")
-            try:
-                await _check_rapfi_ready()
-            except RapfiUnavailable as exc:
-                raise GameError(f"认真模式暂不可用：{exc}；可先发送 #五子棋 对战 娱乐") from None
-        if command.action == "start" and command.game in strategy.GAMES:
-            if not SERVICE.strategy_enabled[command.game]:
-                raise GameError("此小游戏尚未启用")
-            if active and active["status"] != "ended" and active["expires_at"] > SERVICE.clock():
-                raise GameError("本群已有对局，请先结束或等待完成")
-            if command.game == "xiangqi":
-                from .xiangqi import ensure_available
-                await asyncio.to_thread(ensure_available)
-            if command.mode == "bot":
-                try:
-                    await _check_board_ready(command.game)
-                except Exception as exc:
-                    logger.warning(f"[minigame] engine_preflight_failed game={command.game} error={type(exc).__name__}")
-                    raise GameError(f"{GAME_NAMES[command.game]}人机引擎尚不可用，请管理员运行 tools/check_board_engines.py 自检；可先尝试双人模式") from None
-        invitee_name = ""
-        if command.action == "start" and command.invitee:
-            try:
-                member = await asyncio.wait_for(bot.get_group_member_info(group_id=group_id, user_id=command.invitee), 5)
-                if int(member.get("user_id", 0)) != command.invitee:
-                    raise ValueError("member mismatch")
-                invitee_name = str(member.get("card") or member.get("nickname") or command.invitee)[:40]
-            except Exception:
-                raise GameError("无法确认邀请对象在本群，请稍后重试") from None
-        sender = event.sender
-        name = str(getattr(sender, "card", "") or getattr(sender, "nickname", "") or user_id)
-        is_admin = user_id in ADMIN_USERS or getattr(sender, "role", "") in {"owner", "admin"}
-        result = await SERVICE.execute(bot_id, group_id, user_id, name, command, arrival,
-            message_id=event.message_id, is_admin=is_admin,
-            persona=_persona() if command.action == "start" else None, invitee_name=invitee_name)
-        if result.silent:
-            return
-        if result.state is None:
-            if result.message:
-                await _reply(bot, event, result.message)
-            return
-        key = (bot_id, group_id)
-        if command.action == "start":
-            # Retry/notice backoff belongs to the previous game, not this
-            # group's lifetime. A saved new game must not inherit a failed
-            # serious engine's cooldown, especially when the bot moves first.
-            _retry_after.pop(key, None)
-            _engine_notices.pop(key, None)
-        if _needs_work(result.state) and command.action != "view":
-            _schedule_bot(key, bot)
-        else:
-            await _send_result(bot, result)
-            if _needs_work(result.state) and command.action == "view":
-                _retry_after.pop(key, None)
-                _schedule_bot(key, bot)
-        logger.info(f"[minigame] group={group_id} action={command.action} version={result.state['version'] if result.state else '-'}")
+        await apply_game_command(bot, event, command, arrival)
     except ValueError as exc:
         if not arrival.get("bare_idiom"):
             await _reply(bot, event, str(exc))
@@ -469,6 +402,85 @@ async def _handle_game(bot: Bot, event: GroupMessageEvent):
         logger.warning(f"[minigame] group={group_id} operation_failed={type(exc).__name__}")
         if not arrival.get("bare_idiom"):
             await _reply(bot, event, "对局暂时不可用，未确认操作成功；答题请用 #题目，棋类请用 #棋盘 查看")
+
+
+async def apply_game_command(bot, event, command, arrival):
+    """Host application boundary shared by command and Agent transports.
+
+    The original QQ event supplies identity; Command carries only game intent.
+    """
+    bot_id, group_id, user_id = int(bot.self_id), int(event.group_id), int(event.user_id)
+    if not SERVICE.ready:
+        raise GameError("小游戏存储尚未就绪，请稍后再试或联系管理员查看启动日志")
+    if command.action in {"answer", "guess", "cancel", "skip"}:
+        await gate.wait_answer_turn(bot_id, group_id, event.message_id)
+    active = SERVICE.states.get((bot_id, group_id))
+    idiom_start = command.action == "start" and command.game == "idiom"
+    idiom_continue = (active and active["game"] == "idiom" and active["status"] == "active"
+                      and command.action not in {"cancel", "start"})
+    if SERVICE.idiom_enabled and (idiom_start or idiom_continue):
+        loaded = await _ensure_idiom_bank()
+        if not loaded and idiom_start:
+            raise GameError(_idiom_last_error)
+    if command.action == "start" and command.game == "gomoku" and command.mode == "bot" and command.difficulty == "serious":
+        active = SERVICE.states.get((bot_id, group_id))
+        if active and active["status"] != "ended" and active["expires_at"] > SERVICE.clock():
+            raise GameError("本群已有对局，请先结束或等待完成")
+        try:
+            await _check_rapfi_ready()
+        except RapfiUnavailable as exc:
+            raise GameError(f"认真模式暂不可用：{exc}；可先发送 #五子棋 对战 娱乐") from None
+    if command.action == "start" and command.game in strategy.GAMES:
+        if not SERVICE.strategy_enabled[command.game]:
+            raise GameError("此小游戏尚未启用")
+        if active and active["status"] != "ended" and active["expires_at"] > SERVICE.clock():
+            raise GameError("本群已有对局，请先结束或等待完成")
+        if command.game == "xiangqi":
+            from .xiangqi import ensure_available
+            await asyncio.to_thread(ensure_available)
+        if command.mode == "bot":
+            try:
+                await _check_board_ready(command.game)
+            except Exception as exc:
+                logger.warning(f"[minigame] engine_preflight_failed game={command.game} error={type(exc).__name__}")
+                raise GameError(f"{GAME_NAMES[command.game]}人机引擎尚不可用，请管理员运行 tools/check_board_engines.py 自检；可先尝试双人模式") from None
+    invitee_name = ""
+    if command.action == "start" and command.invitee:
+        try:
+            member = await asyncio.wait_for(bot.get_group_member_info(group_id=group_id, user_id=command.invitee), 5)
+            if int(member.get("user_id", 0)) != command.invitee:
+                raise ValueError("member mismatch")
+            invitee_name = str(member.get("card") or member.get("nickname") or command.invitee)[:40]
+        except Exception:
+            raise GameError("无法确认邀请对象在本群，请稍后重试") from None
+    sender = event.sender
+    name = str(getattr(sender, "card", "") or getattr(sender, "nickname", "") or user_id)
+    is_admin = user_id in ADMIN_USERS or getattr(sender, "role", "") in {"owner", "admin"}
+    result = await SERVICE.execute(bot_id, group_id, user_id, name, command, arrival,
+        message_id=event.message_id, is_admin=is_admin,
+        persona=_persona() if command.action == "start" else None, invitee_name=invitee_name)
+    if result.silent:
+        return {"status": "duplicate", "terminal": True}
+    if result.state is None:
+        if result.message:
+            await _reply(bot, event, result.message)
+        return {"status": "reported", "terminal": bool(result.message)}
+    key = (bot_id, group_id)
+    if command.action == "start":
+        # Retry/notice backoff belongs to the previous game, not this
+        # group's lifetime. A saved new game must not inherit a failed
+        # serious engine's cooldown, especially when the bot moves first.
+        _retry_after.pop(key, None)
+        _engine_notices.pop(key, None)
+    if _needs_work(result.state) and command.action != "view":
+        _schedule_bot(key, bot)
+    else:
+        await _send_result(bot, result)
+        if _needs_work(result.state) and command.action == "view":
+            _retry_after.pop(key, None)
+            _schedule_bot(key, bot)
+    logger.info(f"[minigame] group={group_id} action={command.action} version={result.state['version'] if result.state else '-'}")
+    return {"status": "executed", "terminal": True, "version": result.state["version"], "game": result.state["game"]}
 
 
 async def _tick():

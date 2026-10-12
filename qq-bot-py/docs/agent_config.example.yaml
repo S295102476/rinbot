@@ -1,0 +1,50 @@
+# Merge this section into the deployment config.yaml.
+# Do not put API keys in this file. The public default uses the configured primary.
+# Add ai.openai_responses separately and set OPENAI_RESPONSES_API_KEY in .env.
+agent:
+  enabled: true
+  mode: shadow
+  active_groups: [987654321]
+  provider_chain: [primary]
+  timeout_seconds: 90
+  decision_timeout_seconds: 90
+  summary:
+    timeout_seconds: 180
+  max_iterations: 3
+  max_output_tokens: 800
+  group:
+    mention_policy: always
+    burst_window_seconds: 3
+    # 500条热缓存不变；原文窗口最多300条，摘要只使用窗口之前的非重叠消息。
+    # 控制台持久化覆盖优先；升级时在运行参数中同步更新这六个上下文选项。
+    decision_recent_messages: 60
+    decision_context_chars: 12000
+    decision_direct_recent_messages: 60
+    decision_direct_context_chars: 12000
+    decision_backend_search: false
+    decision_concurrency: 2
+    decision_queue_timeout_seconds: 15
+    decision_images: 1
+    decision_avatars: 0
+    hourly_reply_soft_limit: 30
+    group_overrides:
+      987654321:
+        hourly_reply_soft_limit: 45
+    cooldown_seconds: 20
+    max_context_messages: 500
+    daily_decision_limit: 500
+    daily_reply_limit: 80
+    max_reply_chars: 20
+    max_total_reply_chars: 0
+    follow_up:
+      enabled: true
+      schedule_seconds: [120, 600, 1800]
+      max_per_group_per_hour: 6
+  dev:
+    enabled: false
+    provider: openai_responses
+    admin_users: [123456789]
+    workspace: .
+    approval_ttl_seconds: 86400
+    max_command_seconds: 120
+    sandbox_required: true

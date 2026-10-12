@@ -10,14 +10,66 @@ Docker 初始化生成 `runtime/config.yaml`、`runtime/bot.env` 和根 `.env`�
 | `ai.api_url` | 完整 Chat Completions 请求 URL，包含 `/chat/completions` |
 | `ai.api_key` | 自己的模型服务密钥 |
 | `ai.model` | 服务支持的模型名 |
-| `ai.protocol` | 明确指定 `chat_completions`（默认）或 `gemini_native` |
+| `ai.protocol` | 兼容旧聊天入口的显式协议，公开模板为 `chat_completions` |
 | `ai.proxy` | 模型请求代理，默认空 |
 | `agent.group.default_mode` / `only_at` | 默认 `at` / `true`，新群仅 @ 回复 |
 | `database` / `redis` / `meme.minio` | 数据库、缓存与对象存储连接，由初始化器生成 |
 
-`ai.protocol` 由接口文档决定，不通过模型名猜测。普通 Chat Completions 服务可以使用各种兼容模型，API 地址和模型名均需由提供者确认。聊天、基础翻译、记忆摘要默认共用这组模型；接口支持图片输入时才能识图。
+普通 Chat Completions 服务可以使用各种兼容模型，API 地址和模型名均需由提供者确认。公开模板的 Agent 主聊天、摘要、情绪和表情分类明确使用 `agent.model_routes.*.provider: primary`、`protocol: openai`，复用 `ai.api_url`、`ai.api_key`、`ai.model`；不需要维护者的 AG 中转。基础翻译也复用主模型；接口支持图片输入时才能识图。
 
-识图可以使用 `ai.vision` 覆盖主模型的连接与模型字段；没有覆盖时复用主配置。不要将文本模型配置为图片识别模型后期待自动拥有多模态能力。
+新版 Agent 通过 `group_chat` 路由识图；`ai.vision` 用于兼容的旧聊天入口。没有引用时默认只提供最新一张图，有引用时优先引用图，明确提到旧图或比较时才加入历史图。模型本身必须支持图片输入，不能通过修改配置赋予文本模型多模态能力。
+
+## 用途路由
+
+`agent.model_routes` 中的协议显式配置为 `openai`、`responses`、`google` 或 `embedding`，不根据模型名字推断。控制台「用途路由」显示有效值与来源；控制台或 `#切换模型` 的主聊天修改不会顺带修改其他用途。
+
+| 用途 | 公开模板 | 单次超时 |
+| --- | --- | --- |
+| `group_chat` | `primary` / `openai`，省略模型时继承 `ai.model` | 90 秒 |
+| `memory` | 同一主接口；可单独指定模型 | 180 秒 |
+| `emotion` | 同一主接口，失败不阻塞回复 | 15 秒 |
+| `meme` | 同一主接口，图文分类需要视觉能力 | 30 秒 |
+| `embedding` | 默认关闭，Google 向量模型与独立密钥 | 30 秒 |
+| `expert` / `development` | 默认关闭，另配 Responses 接口与模型 | 180 秒 |
+
+例如只让摘要使用独立模型，其余用途继承主模型：
+
+```yaml
+agent:
+  model_routes:
+    group_chat: {provider: primary, protocol: openai}
+    memory: {provider: primary, protocol: openai, model: your-summary-model}
+    emotion: {provider: primary, protocol: openai}
+    meme: {provider: primary, protocol: openai}
+```
+
+如果使用 Google 原生聊天接口，应明确配置对应供应商、原生协议、地址和密钥，不要仅将 `ai.protocol` 改为旧入口的 `gemini_native` 后继续沿用公开模板的 `openai` 路由。具体新增能力配置见[Agent 升级](../qq-bot-py/docs/agent-upgrade.md)；该文档的 AG/GPT 分工是可选部署示例，公共 Docker 默认共享自己配置的主接口。
+
+## 新版记忆、评价与工具
+
+公开模板保留基础记忆，`agent.memory_v2.enabled` 默认关闭。先完成数据库与配置备份，再只在测试群启用：
+
+```yaml
+agent:
+  memory_v2:
+    enabled: true
+    groups: [123456789]  # 替换成自己的测试群；不要原样保留
+    embeddings_enabled: false
+```
+
+没有向量密钥时使用人物与文本召回。需要语义向量时，另设 `GOOGLE_EMBEDDING_API_KEY`，开启 `agent.model_routes.embedding.enabled` 与 `memory_v2.embeddings_enabled`。首次索引和日常索引各自有调用预算；原文归档使用私有 `agent-memory` 桶。
+
+`groups: []` 表示覆盖所有已启用 Agent 的群，首次试用请填写测试群。用户可用 `#我的记忆`、`#纠正记忆`、`#删除记忆`、`#关闭学习`、`#关闭被评价` 管理自己的信息。评价卡需要本群最近 30 天至少 10 条有效消息并跨 2 天；不足时不生成。历史记忆迁移、隐私和归档详情见[新版记忆](../qq-bot-py/docs/agent-memory-v2.md)。
+
+`agent.game_tools` 默认开启，可以通过聊天发起六种小游戏；宿主检查真实请求、玩家与棋局版本，原有指令仍可用。`agent.expert`、开发功能及相应用途路由默认关闭，启用前配置自己的 Responses 接口、模型和允许群／管理员。开发检查还需要隔离 Docker 镜像，未经管理员审阅批准不会应用修改，见[开发任务](../qq-bot-py/docs/developer-tasks.md)。
+
+## 表情收集与外观
+
+表情从符合情绪、启用状态和近期去重条件的完整池中随机选取；累计发送次数没有 26／27 次上限，也不再用于偏向新图。QQ 发送接口确认成功后才计数；旧计数不会清零。
+
+新图审核默认关闭。启用时需填写 `meme.review.doubao` 与 `meme.review.deepseek`，豆包描述、DeepSeek 按规则决定是否入库。把自己的收集规则写入本地文件，再配置 `meme.review.rules_file`；规则文件下一次审核重新读取。该路径默认留空，公共仓库不包含维护者的私人风格偏好。审核启用但规则为空或文件不可读时拒绝新图入库。详见[表情说明](../qq-bot-py/docs/meme_classification.md)。
+
+控制台「外观设置」支持内置星空背景、选择本地壁纸、颜色和毛玻璃效果。外观偏好保存在当前浏览器；迁移 VS Code 工作区不自动迁移浏览器的壁纸与主题设置。
 
 ## 功能开关
 

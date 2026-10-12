@@ -856,7 +856,7 @@ const settingSections = [
     icon: Bot,
     fields: [
       ["agent_enabled", "启用 Agent", "boolean"],
-      ["model", "模型", "text"],
+      ["model", "主聊天模型（其他用途见用途路由）", "text"],
       ["development_mode", "运行范围", "mode"],
       ["test_groups", "测试群组", "ids"],
     ],
@@ -865,27 +865,24 @@ const settingSections = [
     name: "决策与上下文",
     icon: SlidersHorizontal,
     fields: [
-      ["decision_timeout_seconds", "决策超时（秒）", "number", 5, 600],
-      ["decision_concurrency", "并发决策数", "number", 1, 32],
-      ["decision_context_chars", "主动决策上下文字符数", "number", 500, 100000],
+      ["decision_context_chars", "主动决策上下文字符数", "number", 500, 12000],
       [
         "decision_direct_context_chars",
         "直接交互上下文字符数",
         "number",
         500,
-        100000,
+        12000,
       ],
-      ["decision_recent_messages", "主动决策最近消息数", "number", 1, 500],
+      ["decision_recent_messages", "主动决策最近消息数", "number", 1, 60],
       [
         "decision_direct_recent_messages",
         "直接交互最近消息数",
         "number",
         1,
-        500,
+        60,
       ],
       ["decision_images", "图片上限", "number", 0, 5],
       ["decision_avatars", "头像上限", "number", 0, 10],
-      ["summary_timeout_seconds", "摘要超时（秒）", "number", 10, 900],
       ["decision_backend_search", "启用后端搜索", "boolean"],
     ],
   },
@@ -959,7 +956,7 @@ export function Settings() {
       ) : error ? (
         <ErrorState message={error} retry={reload} />
       ) : (
-        <form onSubmit={save}>
+        <form className="card settings-card" onSubmit={save}>
           <Notice>{saveError}</Notice>
           {saved && <Notice kind="success">设置已保存</Notice>}
           {settingSections.map((section) => (

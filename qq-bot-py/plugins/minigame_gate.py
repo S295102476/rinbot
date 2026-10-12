@@ -24,13 +24,18 @@ _disabled_games = frozenset()
 _states = {}
 _arrivals = OrderedDict()
 _answer_arrivals = OrderedDict()
+_agent_arrivals = OrderedDict()
+_agent_enabled = True
+_agent_groups = frozenset()
 
 
-def configure(*, enabled, allowed_groups, blocked_groups, disabled_games=()):
-    global _enabled, _allowed, _blocked, _disabled_games
+def configure(*, enabled, allowed_groups, blocked_groups, disabled_games=(), agent_enabled=True, agent_groups=()):
+    global _enabled, _allowed, _blocked, _disabled_games, _agent_enabled, _agent_groups
     _enabled, _allowed, _blocked = bool(enabled), frozenset(allowed_groups), frozenset(blocked_groups)
     _disabled_games = frozenset(disabled_games)
+    _agent_enabled, _agent_groups = bool(agent_enabled), frozenset(int(group) for group in agent_groups)
     _arrivals.clear()
+    _agent_arrivals.clear()
     for value in _answer_arrivals.values():
         value["done"].set()
     _answer_arrivals.clear()
@@ -38,6 +43,10 @@ def configure(*, enabled, allowed_groups, blocked_groups, disabled_games=()):
 
 def allows(group_id):
     return _enabled and int(group_id) not in _blocked and (not _allowed or int(group_id) in _allowed)
+
+
+def agent_allows(group_id):
+    return bool(allows(group_id) and _agent_enabled and (not _agent_groups or int(group_id) in _agent_groups))
 
 
 def publish(bot_id, group_id, state):
@@ -129,6 +138,82 @@ def game_context(group_id, bot_id=None, now=None):
 def is_command(text):
     value = str(text or "").strip().replace("＃", "#", 1)
     return bool(_COMMAND.match(value) or _COMPACT_ANSWER.fullmatch(value))
+
+
+def natural_intent(text):
+    """Small explicit-request recognizer; ordinary game discussion is not intent."""
+    value = unicodedata.normalize("NFKC", str(text or "")).strip()
+    if not value or len(value) > 160 or value.startswith("#"):
+        return None
+    value = re.sub(r"^(?:凛|艾蕾|伊什塔尔|RinBot)[,，:：\s]*", "", value, flags=re.I)
+    value = re.sub(r"^(?:请|帮我|给我|麻烦你|能不能|可以)[,，\s]*", "", value)
+    value = value.strip(" ，,。.!！?？~～")
+    value = re.sub(r"(?:吧|好吗|好么|可以吗|行吗)$", "", value).strip()
+    game_pattern = "|".join(re.escape(name) for name in GAME_NAMES.values())
+    start = re.fullmatch(r"(?:来|开|开始|玩|下)(?:一[盘局把]|个)?\s*(" + game_pattern
+                        + r")(?:\s*(对战|娱乐|认真|简单|普通|先手|后手|双人|单人|抢答|9路|13路|19路|和你|跟你|和|跟|对局|[ ,，]))*", value)
+    if start:
+        return {"action": "start", "game": next(key for key, name in GAME_NAMES.items() if name == start[1]), "text": value}
+    if re.fullmatch(r"(?:看看|查看|看下|看一下|显示|发一下|再发)?(?:棋盘|题目|当前棋局|游戏进度)", value):
+        return {"action": "view"}
+    actions = {"悔棋": "undo", "我要悔棋": "undo", "我悔棋": "undo", "同意悔棋": "accept_undo",
+               "拒绝悔棋": "reject_undo", "认输": "resign", "我认输": "resign", "我认输了": "resign",
+               "结束游戏": "cancel", "结束这局": "cancel", "取消对局": "cancel", "加入游戏": "join",
+               "加入对局": "join", "我加入": "join", "跳过": "skip", "跳过这题": "skip",
+               "停一手": "pass", "过": "pass", "确认数目": "confirm_score", "继续对局": "resume",
+               "求和": "offer_draw", "同意和棋": "accept_draw", "拒绝和棋": "reject_draw"}
+    if value in actions:
+        return {"action": actions[value]}
+    move = re.fullmatch(r"(?:下|落子|走棋)\s*(.+)", value)
+    if move and any(pattern.fullmatch(move[1]) for pattern in _COORD.values()):
+        return {"action": "move", "argument": move[1]}
+    answer = re.fullmatch(r"(?:我猜|猜|作答|答案是)\s*([0-9]{4}|[一-鿿]{4})", value)
+    if answer:
+        return {"action": "guess" if answer[1].isdigit() else "answer", "argument": answer[1]}
+    dead = re.fullmatch(r"(标死|取消死子)\s*([A-HJ-T](?:[1-9]|1[0-9]))", value, re.I)
+    if dead:
+        return {"action": "mark_dead" if dead[1] == "标死" else "unmark_dead", "argument": dead[2]}
+    return None
+
+
+def capture_agent(bot_id, event):
+    """Snapshot before model work. No board, answer, or hidden data is exposed."""
+    try:
+        key = int(bot_id), int(event.group_id), int(event.message_id)
+        user_id = int(event.user_id)
+    except (AttributeError, TypeError, ValueError):
+        return None
+    now = time.time()
+    while _agent_arrivals:
+        first, (created, _) = next(iter(_agent_arrivals.items()))
+        if now - created < 900 and len(_agent_arrivals) < 8192:
+            break
+        _agent_arrivals.pop(first)
+    if key not in _agent_arrivals:
+        state = _states.get(key[:2]) or {}
+        value = {name: deepcopy(state.get(name)) for name in (
+            "session_id", "version", "question_id", "score_revision", "score_id")}
+        value.update(received_at=now, strict_version=True, bot_id=key[0], group_id=key[1],
+                     user_id=user_id, message_id=key[2])
+        _agent_arrivals[key] = (now, value)
+    return deepcopy(_agent_arrivals[key][1])
+
+
+def is_natural_request(bot_id, event):
+    try:
+        if not agent_allows(int(event.group_id)) or int(event.user_id) == int(bot_id):
+            return False
+        if any(segment.type not in {"text", "at", "reply"} for segment in event.message):
+            return False
+        intent = natural_intent(event.get_plaintext())
+        if not intent or intent.get("game") in _disabled_games:
+            return False
+        if intent["action"] in {"start", "view"}:
+            return True
+        state = _states.get((int(bot_id), int(event.group_id)))
+        return bool(state and state["status"] in {"waiting", "active"})
+    except (AttributeError, TypeError, ValueError):
+        return False
 
 
 def capture(bot_id, event):

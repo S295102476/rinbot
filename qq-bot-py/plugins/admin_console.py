@@ -357,6 +357,10 @@ def install(app: FastAPI, dist_root: Path | None = None) -> None:
         return
     app.state.agent_console_installed = True
     app.include_router(create_router())
+    from .agent_upgrade_console import create_upgrade_router
+    from .developer_console import create_developer_router
+    app.include_router(create_upgrade_router())
+    app.include_router(create_developer_router())
     root = (dist_root or Path(__file__).resolve().parents[1] / "console" / "dist").resolve()
 
     @app.get("/admin", include_in_schema=False)

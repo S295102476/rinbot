@@ -74,4 +74,6 @@ def enabled_plugins(config):
             result.extend(modules)
     if feature_enabled(config, "development_agent") and "agent_plugin" not in result:
         result.append("agent_plugin")
+    if any(feature_enabled(config, name) for name in ("chat", "console", "development_agent")):
+        result.append("agent_upgrade")
     return result

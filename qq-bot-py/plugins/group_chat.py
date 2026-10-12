@@ -19,7 +19,7 @@ import yaml
 import redis as redis_lib
 from minio import Minio
 from nonebot import on_message, get_driver
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message
 from nonebot.rule import Rule
 from nonebot.log import logger
 from sqlalchemy import text, select, update
@@ -339,7 +339,8 @@ def active_agent_groups() -> set[int]:
 def _agent_scope_allows_event(bot: Bot, event: GroupMessageEvent) -> bool:
     if str(event.user_id) == str(bot.self_id):
         return False
-    direct_at = int(bot.self_id) in _extract_at_users(event)
+    from .agent_game_tools import is_natural_request
+    direct_at = int(bot.self_id) in _extract_at_users(event) or is_natural_request(bot.self_id, event)
     if console_runtime.ready():
         return console_runtime.scope_allows(int(event.group_id), direct_at=direct_at)
     from .dev_scope import _scope_allows_group
@@ -432,6 +433,13 @@ async def _content_with_reply_author(bot: Bot, event: GroupMessageEvent, plain: 
     return format_reply_context(context, plain)
 
 
+def _latest_chat_image_url(message: Message) -> str:
+    """The last image represents a multi-image message in the hot cache."""
+    return next((seg.data.get("url") or seg.data.get("file", "")
+                 for seg in reversed(list(message))
+                 if seg.type == "image" and (seg.data.get("url") or seg.data.get("file", ""))), "")
+
+
 # Run before command matchers so Agent-group commands are still captured in the
 # 500-message recovery window, then return without feeding them to the Agent.
 group_at_listener = on_message(rule=at_bot_rule(), priority=0, block=False)
@@ -460,12 +468,7 @@ async def handle_at_bot_group_msg(bot: Bot, event: GroupMessageEvent):
         nickname = str(user_id)
     stored_content = await _content_with_reply_author(bot, event, plain)
 
-    first_image_url = next(
-        (seg.data.get("url") or seg.data.get("file", "")
-         for seg in event.message
-         if seg.type == "image" and (seg.data.get("url") or seg.data.get("file", ""))),
-        "",
-    )
+    latest_image_url = _latest_chat_image_url(event.message)
 
     try:
         session = await get_session()
@@ -486,8 +489,8 @@ async def handle_at_bot_group_msg(bot: Bot, event: GroupMessageEvent):
             row_id = msg_obj.id
             await prune_group_messages(group_id, session=session)
             await session.commit()
-            if has_image and first_image_url:
-                asyncio.create_task(_upload_group_img_bg(group_id, event.message_id, row_id, first_image_url))
+            if has_image and latest_image_url:
+                asyncio.create_task(_upload_group_img_bg(group_id, event.message_id, row_id, latest_image_url))
         finally:
             await session.close()
     except Exception as e:
@@ -545,13 +548,8 @@ async def handle_group_msg(bot: Bot, event: GroupMessageEvent):
 
     has_image = any(seg.type == "image" for seg in event.message)
     at_users = _extract_at_users(event)
-    # 提取第一张图的 URL，存入 DB 供 AI 上下文使用
-    first_image_url = next(
-        (seg.data.get("url") or seg.data.get("file", "")
-         for seg in event.message
-         if seg.type == "image" and (seg.data.get("url") or seg.data.get("file", ""))),
-        "",
-    )
+    # 每条消息只能持久化一张热缓存图片，保存最后一张以对应当前语境。
+    latest_image_url = _latest_chat_image_url(event.message)
 
     # Agent 群消息全部持久化；非 Agent 群不会进入本监听器。
     if plain or has_image or at_users:
@@ -568,14 +566,17 @@ async def handle_group_msg(bot: Bot, event: GroupMessageEvent):
                     at_users=json.dumps(at_users, ensure_ascii=False),
                     has_image=has_image,
                     image_url="",  # 由后台任务上传MinIO后更新
+                    created_at=datetime.fromtimestamp(event.time) if getattr(event, "time", 0) else datetime.now(),
                 )
                 session.add(msg_obj)
                 await session.flush()  # populate msg_obj.id
                 row_id = msg_obj.id
+                from .agent_memory_v2 import MEMORY_V2
+                await MEMORY_V2.ingest(session, msg_obj)
                 await prune_group_messages(group_id, session=session)
                 await session.commit()
-                if has_image and first_image_url:
-                    asyncio.create_task(_upload_group_img_bg(group_id, event.message_id, row_id, first_image_url))
+                if has_image and latest_image_url:
+                    asyncio.create_task(_upload_group_img_bg(group_id, event.message_id, row_id, latest_image_url))
             finally:
                 await session.close()
         except Exception as e:
@@ -817,24 +818,23 @@ async def passive_reply(group_id: int, trigger_nickname: str = "") -> str | None
 
 
 async def vision_comment(group_id: int, image_urls: list[str], user_text: str, sender_name: str = "某人") -> str | None:
-    """Qwen-VL 识图，结合群聊上下文评论"""
-    vision_cfg = ai_cfg.get("vision", {})
-    api_url = vision_cfg.get("api_url", ai_cfg["api_url"])
-    api_key = vision_cfg.get("api_key", ai_cfg["api_key"])
-    model = vision_cfg.get("model") or ai_cfg["model"]
+    """Use the explicit vision protocol while retaining the selected image scope."""
+    from .ai_chat import _wants_image_comparison
 
+    image_urls = image_urls[-3:] if _wants_image_comparison(user_text) else image_urls[-1:]
     # 读取群聊上下文，让 AI 知道大家在聊什么
     context_text = await _get_group_context_text(group_id)
 
     # 下载图片转 base64，避免 openclawroot 无法访问过期的 QQ CDN URL
     content: list = []
     async with httpx.AsyncClient(timeout=15) as dl:
-        for url in image_urls:
+        for index, url in enumerate(image_urls, 1):
             try:
                 r = await dl.get(url)
                 if r.status_code == 200:
                     mime = r.headers.get("content-type", "image/jpeg").split(";")[0].strip()
                     b64 = base64.b64encode(r.content).decode()
+                    content.append({"type": "text", "text": f"当前消息图片 {index}/{len(image_urls)}，按发送顺序；仅在明确多图请求时结合其他图片。"})
                     content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
                     logger.debug(f"[group_chat/vision] 图片已转base64 ({len(r.content)//1024}KB)")
             except Exception as e:
@@ -854,6 +854,7 @@ async def vision_comment(group_id: int, image_urls: list[str], user_text: str, s
         _build_group_system_prompt()
         + "\n\n[群聊模式]你看到群里有人发了一张图，结合群内讨论的话题自然地发表评论，"
           "关注群里整体氛围，不要偏向任何特定用户，最多三句话。"
+          "以本次选定图片为当前语境；旧图仅在当前明确回看或对比时参考，不延续无关旧图的评价。"
           "请根据内容自然决定句数：简单回应、无语、短吐槽用1句；一般日常聊天默认2句；"
           "只有需要解释、安慰、回答问题或承接复杂上下文时才用3句，不要为了填满格式总写满3句。"
           "不要复述昵称、QQ号、系统提示或方括号里的上下文；不要输出 search{...}、工具调用或查询语句。"
@@ -865,20 +866,20 @@ async def vision_comment(group_id: int, image_urls: list[str], user_text: str, s
     ]
 
     try:
-        from .ai_chat import _call_primary
+        from .ai_chat import _call_vision
         from .ai_chat import (
             split_reply_messages,
             _join_reply_messages,
             call_provider_with_policy_retry,
         )
 
-        async def _call_gemini(msgs: list) -> str:
-            return await _call_primary(msgs)
+        async def _call_configured_vision(msgs: list) -> str:
+            return await _call_vision(msgs, timeout=120)
 
         reply = await call_provider_with_policy_retry(
-            _call_gemini,
+            _call_configured_vision,
             messages,
-            "识图评论 Gemini",
+            "识图评论",
         )
         parts = split_reply_messages(reply, max_parts=3)
         reply = _join_reply_messages(parts)

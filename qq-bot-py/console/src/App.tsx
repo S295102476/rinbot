@@ -13,6 +13,7 @@ import {
   Menu,
   MessageSquare,
   Moon,
+  Palette,
   Settings2,
   ShieldCheck,
   Smile,
@@ -26,6 +27,10 @@ import { Dashboard, Groups, Settings } from "./pages/Operations";
 import { Memes } from "./pages/Memes";
 import { Personas } from "./pages/Personas";
 import { Memory, Records } from "./pages/MemoryRecords";
+import { DeveloperTasks } from "./pages/DeveloperTasks";
+import { AgentRoutes, MemoryV2, MemoryJobs } from "./pages/AgentUpgrade";
+import { Appearance } from "./pages/Appearance";
+import { useAppearance, type AppearanceController } from "./appearance";
 
 type Session = { username: string; csrf_token: string };
 const navigation = [
@@ -37,11 +42,16 @@ const navigation = [
   },
   { id: "groups", label: "群聊管理", icon: Users },
   { id: "settings", label: "Agent 设置", icon: Settings2 },
+  { id: "routes", label: "用途路由", icon: Bot },
   { id: "memes", label: "表情库", icon: Smile, section: "内容与记忆" },
   { id: "personas", label: "人格管理", icon: Fingerprint },
   { id: "memory", label: "记忆与关系", icon: Database },
+  { id: "memory-v2", label: "长期记忆", icon: Database },
+  { id: "memory-jobs", label: "整理任务", icon: Activity },
+  { id: "developers", label: "开发任务", icon: ClipboardList },
   { id: "requests", label: "请求记录", icon: Activity, section: "观察与审计" },
   { id: "audits", label: "操作审计", icon: ClipboardList },
+  { id: "appearance", label: "外观设置", icon: Palette, section: "控制台" },
 ];
 
 function Login({ onLogin }: { onLogin: (session: Session) => void }) {
@@ -111,27 +121,27 @@ function Login({ onLogin }: { onLogin: (session: Session) => void }) {
 }
 
 export default function App() {
+  const appearance = useAppearance();
+  return <>
+    <div className="console-wallpaper" aria-hidden="true" style={{ backgroundImage: appearance.wallpaperUrl ? `url("${appearance.wallpaperUrl}")` : undefined }} />
+    <ConsoleApp appearance={appearance} />
+  </>;
+}
+
+function ConsoleApp({ appearance }: { appearance: AppearanceController }) {
   const [session, setSession] = useState<Session | null>(null);
   const [checking, setChecking] = useState(true);
   const [sessionError, setSessionError] = useState("");
   const [page, setPage] = useState(() => location.hash.slice(1) || "overview");
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer] = useState(false);
-  const [theme, setTheme] = useState(
-    () =>
-      localStorage.getItem("qq-admin-theme") ||
-      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
-  );
+  const theme = appearance.theme;
   const [logoutBusy, setLogoutBusy] = useState(false);
   const onLogin = useCallback((value: Session) => {
     setCsrfToken(value.csrf_token);
     setSession(value);
     setSessionError("");
   }, []);
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("qq-admin-theme", theme);
-  }, [theme]);
   useEffect(() => {
     let active = true;
     api<Session>("/auth/me")
@@ -286,9 +296,10 @@ export default function App() {
             <strong>{current.label}</strong>
           </div>
           <div className="topbar-actions">
+            <a className="icon-button" href="#appearance" aria-label="外观设置" title="外观设置"><Palette size={18} /></a>
             <IconButton
               label={theme === "dark" ? "切换浅色模式" : "切换深色模式"}
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => appearance.setAppearance({ mode: theme === "dark" ? "light" : "dark" })}
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </IconButton>
@@ -307,11 +318,16 @@ export default function App() {
           {current.id === "overview" && <Dashboard />}
           {current.id === "groups" && <Groups />}
           {current.id === "settings" && <Settings />}
+          {current.id === "routes" && <AgentRoutes />}
+          {current.id === "memory-v2" && <MemoryV2 />}
+          {current.id === "memory-jobs" && <MemoryJobs />}
+          {current.id === "developers" && <DeveloperTasks />}
           {current.id === "memes" && <Memes />}
           {current.id === "personas" && <Personas />}
           {current.id === "memory" && <Memory />}
           {current.id === "requests" && <Records kind="requests" />}
           {current.id === "audits" && <Records kind="audits" />}
+          {current.id === "appearance" && <Appearance controller={appearance} />}
         </main>
         <footer className="app-footer">
           <span>管理控制台</span>

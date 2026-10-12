@@ -2,6 +2,7 @@ import asyncio
 import re
 import sys
 from dataclasses import replace
+from datetime import datetime
 from types import ModuleType, SimpleNamespace
 
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
@@ -40,7 +41,7 @@ from plugins.link_parser import (
     _looks_like_invalid_bilibili_candidate,
 )
 from plugins.dev_scope import _scope_allows_group
-from plugins.affinity import curved_delta, relationship_stage
+from plugins.affinity import affinity_context, curved_delta, relationship_stage, romance_eligible
 from plugins.persona_manager import get_active_persona_id, get_active_persona_name, get_persona_content, list_personas
 
 
@@ -113,7 +114,38 @@ def test_affinity_relationship_stage_boundaries():
     assert relationship_stage(30) == "好朋友"
     assert relationship_stage(60) == "挚友、闺蜜"
     assert relationship_stage(75) == "非常信任，可托付后背"
-    assert relationship_stage(85) == "接近情人关系"
+    assert relationship_stage(85) == "高度信任的朋友"
+    assert relationship_stage(99.9) == "高度信任的朋友"
+    assert relationship_stage(99.99) == "高度信任的朋友"
+    assert relationship_stage(100) == "恋人关系"
+
+
+def test_affinity_intimacy_requires_real_maximum_and_does_not_round_up():
+    for score in (0, 85, 99.9, 99.99, 99.999999, float("nan"), float("inf"), 101, "invalid"):
+        assert not romance_eligible(score)
+        context = affinity_context(score)
+        assert "真实满好感：否" in context
+        assert "仅友情" in context
+        assert "好感100.0" not in context
+    assert romance_eligible(100)
+    assert "真实满好感：是" in affinity_context(100)
+    assert "仍需双方愿意" in affinity_context(100)
+
+
+def test_dynamic_chat_prompt_keeps_night_time_background_and_real_affinity_boundary():
+    import nonebot
+    try:
+        nonebot.get_driver()
+    except ValueError:
+        nonebot.init(driver="~fastapi", log_level="ERROR")
+    from plugins.ai_chat import build_dynamic_chat_prompt
+
+    prompt = build_dynamic_chat_prompt(11, "fixture", 99.99, datetime(2026, 10, 11, 23, 30))
+    assert "深夜" in prompt
+    assert "不要因为夜深自动催睡" in prompt
+    assert "真实满好感：否" in prompt
+    assert "好感100.0" not in prompt
+    assert "合理表达边界不是冒犯" in prompt
 
 
 def test_persona_prompt_and_visual_policy_are_loaded():
@@ -451,28 +483,25 @@ def test_secret_file_is_not_a_dev_tool_input():
     assert asyncio.run(run())
 
 
-def test_dev_agent_can_list_and_read_bounded_project_context():
+def test_dev_agent_can_list_and_read_bounded_project_context(tmp_path):
+    from test_developer_tasks import service_context
     async def run():
-        context = {"is_admin": True, "user_id": 123456789}
-        listing = await execute_tool(
-            "list_project_files",
-            {"path": "plugins", "max_depth": 1, "max_entries": 300},
-            "dev",
-            context,
-        )
-        excerpt = await execute_tool(
-            "read_project_file",
-            {"path": "plugins/agent_policy.py", "start_line": 1, "max_lines": 3},
-            "dev",
-            context,
-        )
-        return listing, excerpt
+        async with service_context(tmp_path) as service:
+            (service.source / "plugins" / "example.py").write_text("first\nsecond\nthird\nfourth\n", encoding="utf-8")
+            item = await service.create("Read bounded source", "qq:123")
+            context = {"is_admin": True, "user_id": 123}
+            with service.context(item["id"], "qq:123"):
+                listing = await execute_tool("list_project_files",
+                    {"path": "plugins", "max_depth": 1, "max_entries": 300}, "dev", context)
+                excerpt = await execute_tool("read_project_file",
+                    {"path": "plugins/example.py", "start_line": 1, "max_lines": 3}, "dev", context)
+            return listing, excerpt
 
     listing, excerpt = asyncio.run(run())
-    assert "plugins/agent_runtime.py" in listing["entries"]
-    assert "     1:" in excerpt
+    assert "plugins/example.py" in listing["entries"]
+    assert "1:" in excerpt
     assert len([line for line in excerpt.splitlines() if re.match(r"^\s*\d+:", line)]) == 3
-    assert "可提高 start_line 继续读取" in excerpt
+    assert "fourth" not in excerpt
 
 
 def test_dev_agent_rejects_arbitrary_project_commands():
@@ -491,19 +520,23 @@ def test_dev_agent_rejects_arbitrary_project_commands():
     assert False, "development Agent must not execute arbitrary commands"
 
 
-def test_reject_patch_consumes_only_the_requesters_approval(monkeypatch):
+def test_reject_patch_consumes_only_the_requesters_approval(monkeypatch, tmp_path):
+    from test_developer_tasks import service_context
+    from plugins import developer_tasks
     async def run():
-        store = ApprovalStore()
-        store._redis = None
-        monkeypatch.setattr(agent_tools, "APPROVALS", store)
-        token = await store.create({"user_id": 123, "patch": "x"})
-        denied = await reject_patch(token, 456)
-        accepted = await reject_patch(token, 123)
-        return denied, accepted
+        async with service_context(tmp_path) as service:
+            service.config = {"agent": {"dev": {"admin_users": [123, 456]}}}
+            monkeypatch.setattr(developer_tasks, "_SERVICE", service)
+            item = await service.create("Read source", "qq:123")
+            denied = await reject_patch(item["id"], 456)
+            assert (await service.get(item["id"]))["status"] == "queued"
+            accepted = await reject_patch(item["id"], 123)
+            assert (await service.get(item["id"]))["status"] == "rejected"
+            return denied, accepted
 
     denied, accepted = asyncio.run(run())
-    assert "不是该审批的发起人" in denied
-    assert "项目文件没有被修改" in accepted
+    assert "administrator who created" in denied.lower()
+    assert "已拒绝" in accepted
 
 
 def test_group_agent_exposes_only_requested_business_tools():

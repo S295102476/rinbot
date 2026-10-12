@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
@@ -20,14 +21,41 @@ def _load_config() -> dict[str, Any]:
 _CONFIG = ((_load_config().get("agent") or {}).get("affinity") or {})
 
 
+def romance_eligible(score: object) -> bool:
+    """Use the stored persona score, never its rounded display, for intimacy."""
+    try:
+        value = float(score)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(value) and value == 100.0
+
+
+def affinity_context(score: object) -> str:
+    """Render an unambiguous relationship boundary for model context."""
+    try:
+        value = float(score)
+    except (TypeError, ValueError):
+        value = 0.0
+    if not math.isfinite(value) or not -100 <= value <= 100:
+        value = 0.0
+    # 99.99 is still friendship, even if a leaderboard rounds it to 100.0.
+    display = min(value, 99.9) if 0 <= value < 100 else value
+    boundary = "真实满好感：是，亲密回应仍需双方愿意" if romance_eligible(value) else "真实满好感：否，仅友情，不回应亲吻或默认恋人"
+    return f"好感{display:.1f}/100，关系阶段{relationship_stage(value)}；{boundary}"
+
+
 def relationship_stage(score: float) -> str:
     """Return the user-facing-independent relationship band for an affinity score."""
     try:
         score = float(score)
     except (TypeError, ValueError):
         score = 0.0
+    if not math.isfinite(score) or not -100 <= score <= 100:
+        score = 0.0
+    if romance_eligible(score):
+        return "恋人关系"
     if score >= 85:
-        return "接近情人关系"
+        return "高度信任的朋友"
     if score >= 75:
         return "非常信任，可托付后背"
     if score >= 60:

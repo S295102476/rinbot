@@ -197,7 +197,8 @@ async def download_and_store() -> dict[str, int]:
     """从 wiki 下载全部 tabx 数据页面，存入 MySQL (仅在管理员触发时调用)"""
     # 确保表存在
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
 
     counts: dict[str, int] = {}
 

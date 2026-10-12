@@ -250,7 +250,18 @@ class SettingsStore(_Store):
         self.loaded = False
 
     def global_values(self) -> dict:
-        return {**copy.deepcopy(self._defaults), **copy.deepcopy(self._global), "version": self._versions.get("global", 0)}
+        result = {**copy.deepcopy(self._defaults), **copy.deepcopy(self._global), "version": self._versions.get("global", 0)}
+        if self is globals().get("SETTINGS"):
+            from . import model_routes
+            result["model"] = model_routes.resolve("group_chat").model
+            result["decision_timeout_seconds"] = model_routes.resolve("group_chat").timeout
+            result["decision_concurrency"] = model_routes.resolve("group_chat").concurrency
+            result["summary_timeout_seconds"] = model_routes.resolve("memory").timeout
+            for name in ("decision_context_chars", "decision_direct_context_chars"):
+                result[name] = min(12000, int(result[name]))
+            for name in ("decision_recent_messages", "decision_direct_recent_messages"):
+                result[name] = min(60, int(result[name]))
+        return result
 
     def group(self, group_id: int) -> dict:
         gid = int(group_id)
@@ -335,6 +346,10 @@ class SettingsStore(_Store):
                     else:
                         values[field] = value
                 new_version = actual_version + 1
+                route_candidate = None
+                if key == "global" and "model" in patch:
+                    from .model_routes import stage_legacy_model
+                    route_candidate = await stage_legacy_model(session, patch["model"], actor)
                 if row:
                     result = await session.execute(update(ConsoleSetting).where(ConsoleSetting.key == key, ConsoleSetting.version == actual_version).values(values_json=_json(values), version=new_version, updated_at=local_now()))
                     if result.rowcount != 1:
@@ -351,6 +366,9 @@ class SettingsStore(_Store):
                 # Never publish a candidate revision before its transaction commits.
                 if key == "global":
                     self._global = values
+                    if route_candidate and self is globals().get("SETTINGS"):
+                        from .model_routes import publish_legacy_model
+                        publish_legacy_model(route_candidate)
                 else:
                     self._groups[int(key.split(":", 1)[1])] = values
                 self._versions[key] = new_version
@@ -731,9 +749,7 @@ async def initialize_console() -> None:
     """Create only additive console tables; startup must fail closed on errors."""
     from .console_services import CONSOLE_SERVICE_TABLES
     async with db.engine.begin() as connection:
-        await connection.run_sync(lambda sync: db.Base.metadata.create_all(
-            sync, tables=CONSOLE_TABLES + CONSOLE_SERVICE_TABLES
-        ))
+        await db.ensure_tables(connection, CONSOLE_TABLES + CONSOLE_SERVICE_TABLES)
     await SETTINGS.load()
     await QUOTA.recover_pending()
     await STATS.prune()

@@ -20,7 +20,8 @@ with open("config.yaml", "r", encoding="utf-8") as f:
 @get_driver().on_startup
 async def _create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
     logger.info("[marry] 数据表已就绪")
 
 

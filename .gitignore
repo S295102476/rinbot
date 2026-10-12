@@ -31,9 +31,14 @@ qq-bot-py/data/minigames/*
 !qq-bot-py/data/minigames/idioms/
 qq-bot-py/tools/wiki_images/
 qq-bot-py/tools/image_urls.txt
-qq-bot-py/tools/migration/
 qq-bot-py/persona/**/special_users.md
 !qq-bot-py/persona/**/special_users.example.md
+qq-bot-py/agentdocs/
+qq-bot-py/docs/_extracted_text.md
+.agents/
+task-exports/
+rinbot-*.zip
+test_img.txt
 
 # Python
 __pycache__/

@@ -30,7 +30,7 @@ from .db import (
     UserAffinity,
     get_session,
 )
-from .affinity import relationship_stage
+from .affinity import affinity_context, relationship_stage
 from .console_services import MEMORY_WRITE_LOCK, is_memory_protected
 
 
@@ -659,6 +659,7 @@ class AgentMemoryStore:
         events: Sequence[Any],
         *,
         include_episodes: bool,
+        relationship_only: bool = False,
     ) -> str:
         """Return a tiny, relevant memory block for the active batch only."""
         if not _ENABLED:
@@ -752,6 +753,37 @@ class AgentMemoryStore:
                     .order_by(AgentMemoryEpisode.updated_at.desc())
                     .limit(_EPISODE_RECALL_LIMIT)
                 )).scalars().all()
+            # V2 privacy applies even after feature rollback: opting out must not
+            # re-expose old facts, summaries, or relationship-derived profiles.
+            from .agent_memory_models import MemoryPrivacy, MemoryTombstone
+            source_groups = {int(getattr(row, "source_group_id", 0) or 0) for row in global_facts}
+            privacy_rows = (await session.execute(select(MemoryPrivacy).where(
+                MemoryPrivacy.group_id.in_([0, int(group_id), *source_groups])))).scalars().all()
+            denied = {int(row.user_id) for row in privacy_rows if not row.learning
+                      and int(row.group_id) in (0, int(group_id))}
+            tombstones = (await session.execute(select(MemoryTombstone).where(
+                MemoryTombstone.group_id.in_([0, int(group_id), *source_groups])))).scalars().all()
+
+            def suppressed(row):
+                uid = int(row.user_id)
+                origin = int(getattr(row, "group_id", 0) or getattr(row, "source_group_id", 0) or group_id)
+                if uid in denied or any(not p.learning and p.user_id == uid and p.group_id == origin
+                                       for p in privacy_rows):
+                    return True
+                source_mid = int(getattr(row, "source_message_id", 0) or 0)
+                fp = str(getattr(row, "fingerprint", ""))
+                return any(int(t.user_id) in (0, uid) and int(t.group_id) in (0, int(group_id), origin) and (
+                    t.fingerprint in {fp, f"source:{source_mid}"} or
+                    (t.fingerprint == "*" and getattr(row, "created_at", now) <= t.created_at))
+                    for t in tombstones)
+
+            facts = [row for row in facts if not suppressed(row)]
+            global_facts = [row for row in global_facts if not suppressed(row)]
+            relations = [row for row in relations if int(row.user_id) not in denied]
+            if privacy_rows or tombstones:
+                # Old episodes lack excerpt-level provenance, so suppress the
+                # entire group episode fallback once deletion affects the group.
+                episodes = []
         except Exception as exc:
             logger.debug(f"[agent_memory] recall failed group={group_id}: {type(exc).__name__}")
             return ""
@@ -760,23 +792,32 @@ class AgentMemoryStore:
 
         lines: list[str] = []
         recalled_facts = _unique_recalled_facts([*global_facts, *facts], _FACT_RECALL_LIMIT)
-        if recalled_facts:
+        if recalled_facts and not relationship_only:
             lines.append("[与当前发言者相关的长期事实，仅在确有帮助时使用，不要生硬复述]")
             for row in recalled_facts:
                 scope = "global:" if isinstance(row, AgentGlobalPersonFact) else ""
                 lines.append(f"QQ:{int(row.user_id)} [{scope}{row.category}] {row.fact}")
-        if relations:
+        allowed_users = [uid for uid in user_ids if uid not in denied]
+        if allowed_users:
             lines.append("[当前群互动状态，仅作语气与连续性参考，不要向用户公开这些数值]")
-            for row in relations:
-                details = f"QQ:{int(row.user_id)} 已记录发言{int(row.message_count or 0)}次"
-                if int(row.explicit_interaction_count or 0):
+            relations_by_user = {int(row.user_id): row for row in relations}
+            for uid in allowed_users:
+                row = relations_by_user.get(uid)
+                if row is None and uid not in affinity_by_user:
+                    continue
+                # Interaction counters contain a mirrored score, not the
+                # authoritative affinity for the active persona. A missing
+                # affinity record must never unlock romantic responses.
+                score = affinity_by_user.get(uid, 0.0)
+                details = f"QQ:{uid} [{persona_id}] {affinity_context(score)}"
+                if row:
+                    details += f"，已记录发言{int(row.message_count or 0)}次"
+                if row and int(row.explicit_interaction_count or 0):
                     details += f"，明确互动{int(row.explicit_interaction_count)}次"
-                score = affinity_by_user.get(int(row.user_id), float(row.affinity_score or 0.0))
-                details += f"，关系阶段{relationship_stage(score)}（好感{score:.1f}）"
-                if float(row.last_delta or 0):
+                if row and float(row.last_delta or 0):
                     details += f"，最近好感变化{float(row.last_delta):+.1f}"
                 lines.append(details)
-        if episodes:
+        if episodes and not relationship_only:
             lines.append("[较早群聊事件摘要，仅在当前话题涉及过去内容时参考]")
             for row in reversed(episodes):
                 timestamp = row.updated_at.strftime("%Y-%m-%d %H:%M") if row.updated_at else "未知时间"

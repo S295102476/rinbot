@@ -1,92 +1,96 @@
 # RinBot 开发说明
 
-项目介绍、功能和部署入口统一维护在[根 README](../README.md)，本文件记录开发与手动安装方式。默认部署建议使用 Docker Compose；手动运行需要自行准备 MySQL、Redis 和 MinIO。
+项目介绍、截图与 Docker 部署统一放在[仓库首页](../README.md)。本文件说明源码开发、测试、提交和私人工作区迁移，避免维护两份功能介绍。
 
-## 目录与运行环境
+## 一份工作区完成开发和提交
 
-| 目录 / 文件 | 用途 |
-| --- | --- |
-| `bot.py`、`runtime_config.py` | 启动、配置校验与功能加载 |
-| `plugins/` | 机器人、Agent、控制台后端与小游戏 |
-| `console/` | React / TypeScript 管理控制台 |
-| `persona/` | 公开角色种子与公共知识 |
-| `data/` | 随代码提供的小资源；运行数据不提交 |
-| `tests/`、`tools/` | 后端测试与维护工具 |
+仓库根目录包含 `.git/`、根 README、部署文件与 `qq-bot-py/` 源码。当前开发目录是 `E:\qqbot`；日常只修改这里，SFTP 上传和 GitHub 提交使用同一份文件。原来的独立公开目录仅作为旧备份，不再同步修改。
 
-Python 使用 **3.11**，前端构建使用 **Node.js 22** 和 npm。生产配置依照 `config.example.yaml`，前端依赖使用 `package-lock.json`，Python 使用 `requirements.lock.txt`。
-
-## 手动安装
-
-先准备可连接的 MySQL、Redis 与 MinIO，创建独立数据库和访问账号。以下命令从本目录运行：
-
-```bash
-python -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements.lock.txt -r requirements-dev.txt
-python -m playwright install chromium
-cp config.example.yaml config.yaml
-cp .env.example .env
+```text
+qqbot/
+  .git/                      GitHub 仓库历史
+  .vscode/sftp.json           私人 SFTP 配置，Git 忽略
+  README.md                  对外介绍
+  docs/                      对外部署与配置说明
+  qq-bot-py/
+    bot.py / plugins/        后端源码
+    persona/                 人格和公开示例
+    config.example.yaml      公开配置模板
+    config.yaml / .env       私人运行配置，Git 忽略
+    console/                 React 控制台
+    tests/                   离线测试
+    tools/                   运维与迁移工具
+    data/                    本地资源和运行数据
 ```
 
-Windows PowerShell 使用 `.\.venv\Scripts\Activate.ps1` 激活环境，复制文件用 `Copy-Item`。系统还需要中文字体；Linux 可安装 Noto CJK 字体包，浏览器系统依赖可用 `python -m playwright install --with-deps chromium` 安装。
+私人配置、密钥、SFTP、日志、数据库、依赖目录、控制台构建结果、迁移包、Core 本地目录和大图片缓存由 `.gitignore` 排除。必要的小资源与示例配置可以提交。编辑私人 `config.yaml` 只影响自己的运行；需要让其他安装者了解新字段时，同一次修改补充安全的 `config.example.yaml` 和文档，不复制自己的凭据。
 
-编辑 `config.yaml`：填写模型完整请求地址、密钥、名称、允许群、管理员，以及本机数据库 / Redis / MinIO 连接信息。模板中的 `mysql`、`redis`、`minio` 是 Compose 服务名，手动安装时改为实际地址。
+在根目录审阅更改再提交：
 
-在 `.env` 中设置 OneBot Token 和控制台认证变量。使用 `python tools/console_password.py` 按提示生成密码哈希并粘贴到 `AGENT_CONSOLE_PASSWORD_HASH`，OneBot Token 使用随机值；控制台会话由 Redis 存储。准确变量名以 `.env.example` 为准。
-
-构建控制台并启动：
-
-```bash
-cd console
-npm ci
-npm run build
-cd ..
-python bot.py
+```powershell
+cd E:\qqbot
+git status --short
+git diff
+git add README.md docs qq-bot-py
+git diff --cached --stat
+git diff --cached
+git commit -m "Describe the change"
+git push origin main
 ```
 
-服务监听、控制台和 OneBot 接入见[部署说明](../docs/deployment.md)。不要将自己的 `config.yaml`、`.env` 或数据库提交到仓库。
+普通 `git add` 会尊重忽略规则；不要强制添加私人配置。SFTP 则可以上传 Git 忽略的运行配置，两者不需要两份源码。换电脑后 GitHub 凭据需要在新机登录一次，迁移包保留仓库与远端地址。
 
-## 前端开发
+## 手动环境与后端
 
-在 `console/` 执行 `npm run dev`，开发地址为 `http://127.0.0.1:5173/admin/`。Vite 将管理 API 代理给本地 Bot；需要真正操作数据时先运行后端并完成本地配置。Playwright 用例使用受控的接口模拟，不能代替真实服务接入验收。
+用户安装优先参考[Docker 部署](../docs/deployment.md)。手动开发需要 Python 3.11+、MySQL、Redis 与 MinIO；Linux 生产环境可沿用已有虚拟环境与服务。
 
-```bash
-cd console
+在 `qq-bot-py/` 运行以下命令，先创建自己的配置，勿覆盖已有文件：
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock.txt
+.\.venv\Scripts\python.exe -m playwright install chromium
+```
+
+配置参考为 `config.example.yaml`、`.env.example` 与[配置说明](../docs/configuration.md)。根据本机服务填写数据库、Redis、MinIO、模型、QQ 与管理认证；服务凭据和允许群都使用自己的值。示例空凭据不能直接运行。手动启动使用 `.\.venv\Scripts\python.exe bot.py`；Linux 在此目录运行 `bash start.sh`。
+
+公开模板的聊天、摘要、情绪与表情分类共享自己配置的主模型；向量、专家与开发功能默认关闭。新版记忆的备份、迁移和测试群开启步骤见[Agent 升级](docs/agent-upgrade.md)。该文档中的 AG 分工是可选示例，不是基础部署依赖。
+
+## 控制台开发
+
+使用 Node.js，在 `console/` 执行：
+
+```powershell
 npm ci
 npm run dev
 ```
 
-## 验证改动
+开发服务器需要可用的后端管理员接口。上传服务器前执行 `npm run build`，将 `console/dist/` 通过 SFTP 更新；Docker 镜像会自动构建控制台。源码提交包括前端源文件与 `package-lock.json`，构建目录保持本地。
 
-后端命令从 `qq-bot-py/` 执行：
+外观设置和自定义壁纸保存在访问站点的浏览器中，换电脑后重新选择即可。默认三种星空背景随前端构建提供。
 
-```bash
-python -m pytest tests -q
-python tools/check_idioms.py
-```
+## 检查
 
-前端命令从 `qq-bot-py/console/` 执行：
+测试夹具读取公开模板，写入临时的假配置并使用测试账号，不读取自己的运行配置。先安装开发依赖再运行：
 
-```bash
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest tests -q
+cd console
 npm run build
-npx playwright install chromium
 npm test
 ```
 
-公开文件检查从仓库根目录执行：
+接口、对象存储与浏览器测试可以使用替身；它们不代表真实 QQ 或模型已经连通。上线仍需验证真实 @ 回复、图片、数据持久性与新功能的权限边界。仓库 GitHub 检查包含后端测试、前端构建、部署配置与敏感信息扫描。
 
-```bash
-python tools/check_public_release.py
+## U 盘搬运私人工作区
+
+从仓库根目录运行下面的打包工具。退出本地机器人／Core 进程，完成正在进行的 Git 操作后再打包；输出目录位于工作区之外：
+
+```powershell
+.\qq-bot-py\tools\migration\New-UsbPackage.ps1 -ProjectRoot 'E:\qqbot' -Destination 'E:\qqbot-migration'
 ```
 
-测试优先使用临时数据库、内存存储和模拟服务，不连接原部署者的服务器。修改可选功能时至少验证开关关闭且无凭据时不影响默认启动。
+包中保留这一份工作区、Git 历史、SFTP、私人配置、可携带的 VS Code／Git／Node.js 和当前扩展，依赖目录与临时输出不重复打包。使用生成的包内说明和校验文件搬运；包根的 `Open-QQBot.cmd` 可在新 Windows x64 电脑直接打开编辑工作区。只编辑和 SFTP 不需要恢复 Python；要在新机执行后端检查或运行时，再使用包中的环境恢复脚本。
 
-## 修改人设
-
-远坂凛兼容 `persona/*.md` 布局，艾蕾与伊什塔尔使用 `persona/profiles/<id>/`，公共知识放在 `persona/shared/`。角色注册信息位于 `persona/registry.yaml`。管理员可通过控制台编辑和回滚文档，详细目录规则见[人格说明](persona/profiles/README.md)。
-
-Docker 中实际人设来自持久化卷，源码中的内容是首次初始化种子；修改种子不会自动覆盖线上人设。发布前确认私人关系档案未进入提交。
-
-## 维护工具
-
-棋类引擎、GBVSR 数据与 Core 是可选能力，使用方法见[扩展文档](../docs/extensions.md)。`tools/` 中历史数据抓取或诊断工具可能产生文件、联网或连接数据库，执行前阅读对应脚本参数与用途，不要把生成的数据误提交到公开仓库。
+迁移包包含私人配置，供自己用 U 盘搬运，不上传 GitHub。远端服务器的 MySQL、Redis、MinIO 和 QQ 客户端状态不在本地工作区；继续连接原服务器时保留原服务，新服务器迁移则另做数据备份与恢复。完整包结构、校验和新机步骤见[迁移工具说明](tools/migration/README.md)。

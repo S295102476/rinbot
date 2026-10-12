@@ -46,7 +46,8 @@ _at_times: dict[int, list[float]] = defaultdict(list)
 @get_driver().on_startup  # type: ignore[attr-defined]
 async def _init_blacklist():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
     session = await get_session()
     try:
         rows = (await session.execute(select(Blacklist.user_id))).scalars().all()

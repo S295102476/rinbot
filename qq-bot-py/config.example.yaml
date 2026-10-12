@@ -69,6 +69,10 @@ ai:
     api_key: ""
     api_key_env: OPENAI_RESPONSES_API_KEY
     model: ""
+  google:
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key_env: GOOGLE_EMBEDDING_API_KEY
+    proxy: ""
   search:
     provider: disabled
     enable_backend_search: false
@@ -82,6 +86,18 @@ agent:
   decision_timeout_seconds: 90
   max_iterations: 3
   max_output_tokens: 1200
+  # The public setup shares ai.api_url/api_key/model. No AG relay is required.
+  # Omit model here to inherit ai.model; a non-empty model overrides this purpose.
+  # Protocol is explicit and independent of the model's name.
+  model_routes:
+    group_chat: {provider: primary, protocol: openai, timeout: 90, max_output_tokens: 4000, concurrency: 2}
+    memory: {provider: primary, protocol: openai, timeout: 180, max_output_tokens: 8000, concurrency: 1}
+    emotion: {provider: primary, protocol: openai, timeout: 15, max_output_tokens: 128, concurrency: 2}
+    meme: {provider: primary, protocol: openai, timeout: 30, max_output_tokens: 256, concurrency: 2}
+    # Optional paid services: fill their own provider configuration before enabling.
+    embedding: {enabled: false, provider: google, protocol: embedding, model: gemini-embedding-2, timeout: 30, max_output_tokens: 768, concurrency: 2}
+    expert: {enabled: false, provider: openai_responses, protocol: responses, timeout: 180, max_output_tokens: 6000, concurrency: 2, daily_limit: 20}
+    development: {enabled: false, provider: openai_responses, protocol: responses, timeout: 180, max_output_tokens: 12000, concurrency: 1}
   summary:
     timeout_seconds: 180
   group:
@@ -93,12 +109,12 @@ agent:
     burst_window_seconds: 3
     cadence_seconds: 10
     max_context_messages: 100
-    decision_recent_messages: 100
-    decision_direct_recent_messages: 100
+    decision_recent_messages: 60
+    decision_direct_recent_messages: 60
     decision_context_chars: 12000
     decision_direct_context_chars: 12000
     decision_concurrency: 2
-    decision_queue_timeout_seconds: 30
+    decision_queue_timeout_seconds: 15
     decision_backend_search: false
     decision_images: 1
     decision_avatars: 0
@@ -119,6 +135,18 @@ agent:
     fact_limit_per_user: 40
     fact_recall_limit: 6
     max_facts_per_writeback: 8
+  # First validate in a test group. Empty groups expands to enabled Agent groups.
+  memory_v2:
+    enabled: false
+    groups: []
+    embeddings_enabled: false
+  game_tools:
+    enabled: true
+    groups: []
+  expert:
+    enabled: false
+    groups: []
+    daily_limit: 20
   persona:
     active_id: eres
     profile_dir: persona/profiles
@@ -130,6 +158,8 @@ agent:
     enabled: false
     admin_users: []
     workspace: .
+    task_storage: data/developer-tasks
+    check_image: rinbot-dev-checks:local
     sandbox_required: true
 dev_scope:
   enabled: false
@@ -166,6 +196,10 @@ meme:
     enabled: false
     fail_closed: true
     rules: ""
+    # A private text file can override rules and is reread for every new review.
+    # Create it yourself before setting its path; unavailable/empty files reject collection.
+    rules_file: ""
+    description_prompt: ""
     timeout: 30
     doubao: {api_url: "", api_key: "", model: ""}
     deepseek: {api_url: "", api_key: "", model: ""}

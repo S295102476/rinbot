@@ -307,6 +307,10 @@ class GameService:
             old = self.states.get(key)
             if old and str(message_id) in old.get("seen", []):
                 return Result(None, silent=True)
+            # Agent decisions may take seconds. Even resignation/cancellation
+            # must bind to the exact state seen before that model call.
+            if arrival.get("strict_version") and command.action not in {"view", "question"}:
+                self._check_arrival(old, arrival)
             now = self.clock()
             if old and old["game"] == "number" and command.action != "start":
                 return await self._execute_number(key, old, user_id, name, command, arrival, message_id, is_admin)

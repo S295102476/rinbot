@@ -1,0 +1,18 @@
+# 开发期间将所有群消息限制到测试群，私聊仍保留给管理员 Agent。
+dev_scope:
+  enabled: true
+  # 启动时是否让所有群仅真实 @机器人 触发 Agent；#指令始终保留。
+  at_only: false
+  allowed_groups:
+    - 987654321
+  allow_private: true
+
+# 发布时关闭：
+# dev_scope:
+#   enabled: false
+#   at_only: false
+
+# 运行时管理员指令：
+# #开发监听 on   -> 仅测试群监听普通消息
+# #开发监听 off  -> 恢复所有 Agent 群监听
+# #开发监听 at   -> 仅真实 @机器人触发 Agent；#指令、🦌鹿历、.CoC、GsCore 等本地指令正常

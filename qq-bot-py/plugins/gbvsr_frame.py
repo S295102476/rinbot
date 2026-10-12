@@ -415,7 +415,22 @@ def _input_aliases(input_name: str) -> set[str]:
             aliases.add(token.replace("cxx", "tc", 1))
             continue
 
-        m = re.fullmatch(r"(\d+)([lmh])~.+", token)
+        # Group button-led follow-ups with their starter; dash follow-ups
+        # such as 66~L also accept the shortcut 66A.
+        m = re.fullmatch(r"(j?\d+)([lmhu]?)~([lmhu])", token)
+        if m:
+            nums, starter, follow = m.groups()
+            starters = _BUTTON_ALT[starter.upper()] if starter else ("",)
+            for start in starters:
+                for alt in _BUTTON_ALT[follow.upper()]:
+                    aliases.update(_expand_motion_aliases(f"{nums}{start}~{alt}"))
+                    if not starter:
+                        aliases.update(_expand_motion_aliases(nums + alt))
+                if starter:
+                    aliases.update(_expand_motion_aliases(nums + start))
+            continue
+
+        m = re.fullmatch(r"(\d+)([lmhu])~.+", token)
         if m:
             nums, btn = m.groups()
             for alt in _BUTTON_ALT.get(btn.upper(), (btn,)):

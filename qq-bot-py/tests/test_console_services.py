@@ -206,6 +206,80 @@ def test_affinity_changes_only_selected_persona_and_syncs_rin_legacy(tmp_path):
     asyncio.run(run())
 
 
+def test_relationship_recall_uses_current_persona_score_without_counter_row(tmp_path, monkeypatch):
+    from plugins import agent_memory
+    from plugins import agent_memory_models  # Ensure privacy tables exist in this SQLite fixture.
+
+    assert agent_memory_models.MemoryPrivacy.__table__.metadata is db.Base.metadata
+    monkeypatch.setattr(agent_memory, "_ENABLED", True)
+
+    async def run():
+        async with service_context(tmp_path) as (_, factory):
+            async def session_factory():
+                return factory()
+            monkeypatch.setattr(agent_memory, "get_session", session_factory)
+            async with factory() as session:
+                session.add_all([
+                    db.AgentPersonaAffinity(persona_id="rin", user_id=7, affinity_score=100),
+                    db.AgentPersonaAffinity(persona_id="ishtar", user_id=7, affinity_score=99.99),
+                ])
+                await session.commit()
+            monkeypatch.setattr(agent_memory, "_current_persona_id", lambda: "ishtar")
+            events = [SimpleNamespace(user_id=7)]
+            recalled = await agent_memory.AgentMemoryStore().render_recall(12, events,
+                include_episodes=False, relationship_only=True)
+            assert "[ishtar]" in recalled
+            assert "真实满好感：否" in recalled
+            assert "好感100.0" not in recalled
+            assert "恋人关系" not in recalled
+            monkeypatch.setattr(agent_memory, "_current_persona_id", lambda: "rin")
+            recalled = await agent_memory.AgentMemoryStore().render_recall(12, events,
+                include_episodes=False, relationship_only=True)
+            assert "[rin]" in recalled
+            assert "真实满好感：是" in recalled
+            assert "恋人关系" in recalled
+            assert "仍需双方愿意" in recalled
+    asyncio.run(run())
+
+
+def test_relationship_counter_mirror_does_not_unlock_romance_without_affinity(tmp_path, monkeypatch):
+    from plugins import agent_memory, agent_memory_models
+
+    assert agent_memory_models.MemoryPrivacy.__table__.metadata is db.Base.metadata
+    monkeypatch.setattr(agent_memory, "_ENABLED", True)
+
+    async def run():
+        async with service_context(tmp_path) as (_, factory):
+            async def session_factory():
+                return factory()
+            monkeypatch.setattr(agent_memory, "get_session", session_factory)
+            async with factory() as session:
+                session.add_all([
+                    db.AgentPersonaRelationshipState(persona_id="ishtar", group_id=12,
+                        user_id=7, affinity_score=100, message_count=19),
+                    db.AgentRelationshipState(group_id=12, user_id=7,
+                        affinity_score=100, message_count=23),
+                ])
+                await session.commit()
+            for persona, count in (("ishtar", 19), ("rin", 23)):
+                monkeypatch.setattr(agent_memory, "_current_persona_id", lambda: persona)
+                recalled = await agent_memory.AgentMemoryStore().render_recall(12,
+                    [SimpleNamespace(user_id=7)], include_episodes=False, relationship_only=True)
+                assert f"[{persona}]" in recalled
+                assert f"已记录发言{count}次" in recalled
+                assert "真实满好感：否" in recalled
+                assert "恋人关系" not in recalled
+            # Rin's real legacy affinity remains an authoritative migration source.
+            async with factory() as session:
+                session.add(db.UserAffinity(user_id=7, affinity_score=100))
+                await session.commit()
+            monkeypatch.setattr(agent_memory, "_current_persona_id", lambda: "rin")
+            recalled = await agent_memory.AgentMemoryStore().render_recall(12,
+                [SimpleNamespace(user_id=7)], include_episodes=False, relationship_only=True)
+            assert "真实满好感：是" in recalled
+    asyncio.run(run())
+
+
 def test_persona_document_ids_backups_conflicts_restore_and_no_arbitrary_path(tmp_path):
     async def run():
         root = tmp_path / "profiles" / "rin"

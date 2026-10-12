@@ -13,6 +13,17 @@ from plugins.agent_requests import REQUEST_CONTEXT
 from plugins.agent_runtime import AgentRuntime
 
 
+@pytest.fixture(autouse=True)
+def isolated_routes(monkeypatch):
+    """Scheduling tests must never dispatch to a configured real provider."""
+    route = module.model_routes.Route("group_chat", "test", "openai", "fixture-model", 90, 4000, 2)
+    monkeypatch.setattr(module.model_routes, "resolve", lambda role, *args, **kwargs:
+        replace(route, role=role, timeout=180 if role == "memory" else 90))
+    async def no_network(*args, **kwargs):
+        raise AssertionError("A scheduling test did not replace the provider boundary")
+    monkeypatch.setattr(module.model_routes, "complete", no_network)
+
+
 def runtime_for_groups():
     runtime = AgentRuntime()
     runtime.policy = replace(
@@ -20,6 +31,31 @@ def runtime_for_groups():
         burst_window_seconds=0,
     )
     return runtime
+
+
+@pytest.mark.parametrize("already_sent", [False, True])
+def test_whole_task_deadline_includes_context_and_avoids_duplicate_timeout_notice(monkeypatch, already_sent):
+    from contextlib import asynccontextmanager
+    sent = []
+    class Bot:
+        self_id = 100
+        async def send(self, event, text): sent.append(text)
+    @asynccontextmanager
+    async def chat_turn(*args, **kwargs): yield {}
+    real_timeout = asyncio.timeout
+    monkeypatch.setattr(module.asyncio, "timeout", lambda seconds: real_timeout(min(seconds, 0.01)))
+    monkeypatch.setattr(module.CONSOLE, "chat_turn", chat_turn)
+    monkeypatch.setattr(module, "_agent_direct", lambda *args: True)
+    async def run():
+        runtime = runtime_for_groups()
+        async def stalled(group, events, context):
+            context["responded"] = already_sent
+            await asyncio.Event().wait()
+        runtime._handle_group_batch_impl = stalled
+        event = SimpleNamespace(user_id=10, message_id=123)
+        assert await runtime._handle_group_batch(10, [(Bot(), event, True)]) == []
+        assert len(sent) == (0 if already_sent else 1)
+    asyncio.run(run())
 
 
 def snapshot(last_id=500):
@@ -146,7 +182,7 @@ def test_summary_serializes_groups_and_reads_latest_window_after_wait(monkeypatc
         current[20] = snapshot(550)
         release.set()
         await asyncio.wait_for(asyncio.gather(first, second), 1)
-        assert [(group, last_id) for group, last_id, _ in calls] == [(10, 200), (20, 250)]
+        assert [(group, last_id) for group, last_id, _ in calls] == [(10, 440), (20, 490)]
         assert all(ctx["purpose"] == "summary" and ctx["timeout"] == 180 for _, _, ctx in calls)
         assert calls[0][2]["request_id"] != calls[1][2]["request_id"]
         assert not runtime._summary_tasks
@@ -158,15 +194,19 @@ def test_context_defaults_and_console_overrides_feed_the_same_summary_boundary(m
     overrides = {}
     monkeypatch.setattr(module, "GROUP_CONFIG", {})
     monkeypatch.setattr(module.CONSOLE, "global_value", lambda key, default: overrides.get(key, default))
-    assert module._decision_context_limits(False) == (300, 30000)
-    assert module._decision_context_limits(True) == (300, 30000)
+    assert module._decision_context_limits(False) == (60, 12000)
+    assert module._decision_context_limits(True) == (60, 12000)
     runtime = runtime_for_groups()
-    assert len(runtime._summary_messages(10, snapshot())) == 200
+    assert len(runtime._summary_messages(10, snapshot())) == 440
     overrides.update(decision_recent_messages=250, decision_direct_recent_messages=350,
                      decision_context_chars=20000, decision_direct_context_chars=32000)
-    assert module._decision_context_limits(False) == (250, 20000)
-    assert module._decision_context_limits(True) == (350, 32000)
-    assert runtime._summary_messages(10, snapshot()) == snapshot().messages[:150]
+    assert module._decision_context_limits(False) == (60, 12000)
+    assert module._decision_context_limits(True) == (60, 12000)
+    assert runtime._summary_messages(10, snapshot()) == snapshot().messages[:440]
+    overrides.update(decision_recent_messages=30, decision_direct_recent_messages=40,
+                     decision_context_chars=6000, decision_direct_context_chars=8000)
+    assert module._decision_context_limits(False) == (30, 6000)
+    assert module._decision_context_limits(True) == (40, 8000)
 
 
 def test_followup_context_uses_effective_prompt_limits_not_legacy_cache_limit(monkeypatch):
@@ -321,30 +361,30 @@ def test_cancelled_summary_releases_global_slot(monkeypatch):
 def test_summary_generation_passes_its_http_timeout_and_cancels_slow_call(monkeypatch):
     async def run():
         runtime = runtime_for_groups()
-        runtime.summary_timeout = 0.02
         captured = {}
-        fake_ai = ModuleType("plugins.ai_chat")
+        route = module.model_routes.resolve("memory")
+        monkeypatch.setattr(module.model_routes, "resolve", lambda *args, **kwargs: replace(route, timeout=0.02))
 
-        async def call(messages, **kwargs):
-            captured.update(kwargs)
+        async def call(role, messages, **kwargs):
+            captured.update(role=role, **kwargs)
             try:
                 await asyncio.Event().wait()
             finally:
                 captured["cancelled"] = True
 
-        fake_ai._call_primary = call
-        monkeypatch.setitem(sys.modules, "plugins.ai_chat", fake_ai)
+        monkeypatch.setattr(module.model_routes, "complete", call)
         with pytest.raises(TimeoutError):
             await runtime._generate_summary(10, snapshot().messages[:200])
-        assert captured == {"timeout": 0.02, "cancelled": True}
+        assert captured == {"role": "memory", "group_id": 10, "cancelled": True}
 
     asyncio.run(run())
 
 
-def test_decision_uses_independent_deadline_and_resets_context():
+def test_decision_uses_independent_deadline_and_resets_context(monkeypatch):
     async def run():
         runtime = runtime_for_groups()
-        runtime.decision_timeout = 0.02
+        route = module.model_routes.resolve("group_chat")
+        monkeypatch.setattr(module.model_routes, "resolve", lambda *args, **kwargs: replace(route, timeout=0.02))
         runtime._messages = lambda **kwargs: []
         captured = {}
 
@@ -353,8 +393,8 @@ def test_decision_uses_independent_deadline_and_resets_context():
             await asyncio.Event().wait()
 
         runtime._complete = complete
-        with pytest.raises(TimeoutError):
-            await runtime._decide(scope="group", request="hello", group_id=10)
+        parts, decision = await runtime._decide(scope="group", request="hello", group_id=10, force_reply=True)
+        assert decision["status"] == "task_timeout" and parts
         assert captured["purpose"] == "group_decision"
         assert captured["group_id"] == 10
         assert captured["timeout"] == 0.02
@@ -395,9 +435,8 @@ def test_stalled_summary_storage_preserves_previous_hot_summary_and_new_jobs_wor
         runtime.summary_storage_timeout = 0.02
         stored = []
         cancelled = []
-        fake_ai = ModuleType("plugins.ai_chat")
-
-        async def call(messages, **kwargs):
+        async def call(role, messages, **kwargs):
+            assert role == "memory"
             return '{"summary":"fresh summary","facts":[]}'
 
         async def read(group_id):
@@ -410,8 +449,7 @@ def test_stalled_summary_storage_preserves_previous_hot_summary_and_new_jobs_wor
                 finally:
                     cancelled.append(group_id)
 
-        fake_ai._call_primary = call
-        monkeypatch.setitem(sys.modules, "plugins.ai_chat", fake_ai)
+        monkeypatch.setattr(module.model_routes, "complete", call)
         monkeypatch.setattr(module.CACHE, "snapshot", read)
         monkeypatch.setattr(module.CACHE, "set_summary", lambda *args: stored.append(args))
         runtime._persist_summary = persist
@@ -472,7 +510,7 @@ def test_decision_queue_timeout_never_dispatches_and_cancellation_releases_slot(
     asyncio.run(run())
 
 
-def test_waiting_for_decision_slot_does_not_consume_provider_deadline():
+def test_forced_reply_obeys_queue_deadline_without_dispatching():
     async def run():
         runtime = runtime_for_groups()
         runtime._decision_semaphore = asyncio.Semaphore(1)
@@ -488,11 +526,11 @@ def test_waiting_for_decision_slot_does_not_consume_provider_deadline():
         task = asyncio.create_task(runtime._request_decision(
             [], "group", 10, 0.01, 1, force_reply=True,
         ))
-        await asyncio.sleep(0.03)
-        assert not task.done()
+        with pytest.raises(TimeoutError):
+            await asyncio.wait_for(task, 1)
         assert not started.is_set()
         runtime._decision_semaphore.release()
-        assert await asyncio.wait_for(task, 1) == "ok"
+        assert not runtime._decision_semaphore.locked()
 
     asyncio.run(run())
 
@@ -500,6 +538,12 @@ def test_waiting_for_decision_slot_does_not_consume_provider_deadline():
 @pytest.mark.parametrize("text,expected", [
     ("普通闲聊", (False, False)),
     ("这张图是谁", (True, False)),
+    ("这个怎么用", (False, False)),
+    ("今天比较忙", (False, False)),
+    ("对比两个Python框架", (False, False)),
+    ("刚才那张图呢", (True, False)),
+    ("对比这两张图", (True, False)),
+    ("你的头像好看吗", (True, True)),
     ("搜索今天的天气", (False, False)),
 ])
 def test_visual_and_search_gates_only_add_expensive_inputs_when_needed(text, expected):
@@ -508,7 +552,8 @@ def test_visual_and_search_gates_only_add_expensive_inputs_when_needed(text, exp
         message=[],
     )
     assert module._batch_visual_needs([(None, event, False)]) == expected
-    assert module._request_needs_backend_search(text) is ("搜索" in text)
+    if text in {"普通闲聊", "这张图是谁", "搜索今天的天气"}:
+        assert module._request_needs_backend_search(text) is ("搜索" in text)
 
 
 @pytest.mark.parametrize("quoted_count", [0, 1, 2, 3])
@@ -540,7 +585,7 @@ def test_decision_image_budget_includes_quotes_but_not_avatar(monkeypatch, quote
         runtime._context_images = context
         runtime._context_avatars = avatars
         event = SimpleNamespace(
-            get_plaintext=lambda: "",
+            get_plaintext=lambda: "比较这几张图和头像",
             message=[],
         )
         result = await runtime._decision_images(
@@ -588,7 +633,8 @@ def test_current_images_survive_history_gate_and_old_history_is_not_downloaded(m
         assert "\u6d88\u606fID:1" not in labels
         assert "\u5f53\u524d\u6279\u6b21\u56fe\u7247 1/1" in labels
         parts = await runtime._context_images(
-            10, snap, current, history_limit=2, history_max_age_seconds=600,
+            10, snap, [SimpleNamespace(message_id=3, get_plaintext=lambda: "对比这两张图")],
+            history_limit=2, history_max_age_seconds=600,
         )
         assert sum(part["type"] == "image_url" for part in parts) == 2
         labels = " ".join(part.get("text", "") for part in parts)
@@ -625,3 +671,451 @@ def test_avatar_budget_prioritizes_mentioned_target_over_sender(monkeypatch):
         assert selected == [99]
 
     asyncio.run(run())
+
+
+def visual_event(message_id, text="", user_id=42, urls=(), reply=False):
+    return SimpleNamespace(
+        message_id=message_id, user_id=user_id, get_plaintext=lambda: text,
+        sender=SimpleNamespace(nickname=f"user-{user_id}"),
+        message=[SimpleNamespace(type="image", data={"url": url}) for url in urls],
+        reply=SimpleNamespace() if reply else None,
+    )
+
+
+def visual_cache(monkeypatch, messages, urls=()):
+    cache = AgentContextCache()
+    for url in [*(item.image_url for item in messages if item.image_url), *urls]:
+        cache.put_image_payload(10, url, "image/jpeg", url.encode())
+    monkeypatch.setattr(module, "CACHE", cache)
+    fake_ai = ModuleType("plugins.ai_chat")
+    fake_ai._read_group_img_b64 = lambda *args: pytest.fail("Unexpected unselected image download")
+    monkeypatch.setitem(sys.modules, "plugins.ai_chat", fake_ai)
+    fake_coordination = ModuleType("plugins.chat_coordination")
+
+    async def no_quote(*args):
+        return None
+
+    fake_coordination.resolve_reply_context = no_quote
+    monkeypatch.setitem(sys.modules, "plugins.chat_coordination", fake_coordination)
+    return cache, fake_coordination
+
+
+def selected_image_urls(parts):
+    return [part["image_url"]["url"] for part in parts if part["type"] == "image_url"]
+
+
+def selected_labels(parts):
+    return " ".join(part["text"] for part in parts if part["type"] == "text")
+
+
+def test_uploaded_image_defaults_to_last_segment_without_reusing_first_cached_image(monkeypatch):
+    async def run():
+        record = CachedMessage(10, 9, 42, "user", "", image_url="old-first-cache")
+        visual_cache(monkeypatch, [record], ["first", "last"])
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=(record,)), [visual_event(9, urls=("first", "last"))],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGFzdA=="]
+        assert "原消息内图片序号:2" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_explicit_multiple_image_request_preserves_segment_order_without_extra_old_images(monkeypatch):
+    async def run():
+        older = CachedMessage(10, 8, 99, "other", "", image_url="older-other")
+        record = CachedMessage(10, 9, 42, "user", "", image_url="unrelated-cached-first")
+        visual_cache(monkeypatch, [older, record], ["first", "last"])
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=(older, record)),
+            [visual_event(9, "这几张图看看", urls=("first", "last"))],
+        )
+        assert selected_image_urls(parts) == [
+            "data:image/jpeg;base64,Zmlyc3Q=", "data:image/jpeg;base64,bGFzdA==",
+        ]
+    asyncio.run(run())
+
+
+def test_compare_two_current_images_does_not_add_unrequested_third_history_image(monkeypatch):
+    async def run():
+        older = CachedMessage(10, 8, 99, "other", "", image_url="older-other")
+        record = CachedMessage(10, 9, 42, "user", "", image_url="persisted-first")
+        visual_cache(monkeypatch, [older, record], ["first", "last"])
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=(older, record)),
+            [visual_event(9, "对比这两张图", urls=("first", "last"))],
+        )
+        assert selected_image_urls(parts) == [
+            "data:image/jpeg;base64,Zmlyc3Q=", "data:image/jpeg;base64,bGFzdA==",
+        ]
+        assert "消息ID:8" not in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_previous_image_reference_can_select_prior_image_in_same_batch(monkeypatch):
+    async def run():
+        visual_cache(monkeypatch, [], ["previous", "latest"])
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=()), [
+                visual_event(8, urls=("previous",)),
+                visual_event(9, "上一张图呢", urls=("latest",)),
+            ],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,cHJldmlvdXM="]
+        assert "消息ID:8" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_latest_image_selection_follows_message_order_not_qq_id(monkeypatch):
+    async def run():
+        records = (
+            CachedMessage(10, 900, 42, "user", "", image_url="first"),
+            CachedMessage(10, 7, 42, "user", "", image_url="last"),
+        )
+        visual_cache(monkeypatch, records)
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(900), visual_event(7)],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGFzdA=="]
+        assert "消息ID:7" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_question_without_upload_uses_actual_latest_group_image_before_question(monkeypatch):
+    async def run():
+        now = datetime.now()
+        records = (
+            CachedMessage(10, 1, 42, "user", "", image_url="own-old", created_at=now - timedelta(seconds=120)),
+            CachedMessage(10, 2, 99, "other", "", image_url="latest", created_at=now - timedelta(seconds=2)),
+            CachedMessage(10, 3, 42, "user", "这张图是谁", created_at=now),
+            CachedMessage(10, 4, 99, "other", "", image_url="after-question", created_at=now),
+        )
+        visual_cache(monkeypatch, records)
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(3, "这张图是谁")],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGF0ZXN0"]
+        assert "消息ID:2" in selected_labels(parts)
+        assert "消息ID:4" not in selected_labels(parts)
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("这个怎么用", []), ("这张图是谁", [2]), ("上一张图呢", [1]),
+    ("刚才那张图", [2]), ("对比这两张图", [1, 2]),
+])
+def test_only_explicit_old_or_multiple_reference_admits_more_history(monkeypatch, text, expected):
+    async def run():
+        now = datetime.now()
+        records = tuple(
+            CachedMessage(10, index, 42, "user", "", image_url=f"image-{index}", created_at=now)
+            for index in (1, 2)
+        ) + (CachedMessage(10, 3, 42, "user", text, created_at=now),)
+        visual_cache(monkeypatch, records)
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(3, text)],
+        )
+        labels = selected_labels(parts)
+        assert len(selected_image_urls(parts)) == len(expected)
+        for index in (1, 2):
+            assert (f"消息ID:{index}" in labels) is (index in expected)
+    asyncio.run(run())
+
+
+def test_unrequested_stale_image_is_not_reintroduced_by_vague_visual_question(monkeypatch):
+    async def run():
+        records = (
+            CachedMessage(10, 1, 42, "user", "", image_url="stale", created_at=datetime.now() - timedelta(hours=2)),
+            CachedMessage(10, 2, 42, "user", "好看吗"),
+        )
+        visual_cache(monkeypatch, records)
+        assert await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(2, "好看吗")],
+        ) == []
+    asyncio.run(run())
+
+
+def test_explicit_latest_picture_question_still_works_in_a_slow_group(monkeypatch):
+    async def run():
+        records = (
+            CachedMessage(10, 1, 99, "other", "", image_url="latest", created_at=datetime.now() - timedelta(minutes=10)),
+            CachedMessage(10, 2, 42, "user", "这张图是谁"),
+        )
+        visual_cache(monkeypatch, records)
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(2, "这张图是谁")],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGF0ZXN0"]
+    asyncio.run(run())
+
+
+def test_current_download_failure_does_not_fall_back_to_old_cached_image(monkeypatch):
+    async def run():
+        records = (CachedMessage(10, 1, 42, "user", "", image_url="old"),)
+        visual_cache(monkeypatch, records)
+        requested = []
+
+        class FailedClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def get(self, url):
+                requested.append(url)
+                raise OSError("fixture image unavailable")
+
+        monkeypatch.setattr(module.httpx, "AsyncClient", FailedClient)
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(2, urls=("missing-last",))],
+        )
+        assert requested == ["missing-last"]
+        assert selected_image_urls(parts) == []
+        assert "加载失败" in selected_labels(parts)
+        assert "消息ID:1" not in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_legacy_multi_image_record_uses_actual_last_source_url(monkeypatch):
+    async def run():
+        record = CachedMessage(
+            10, 1, 42, "user", "", image_url="persisted-first",
+            raw_message="[CQ:image,url=first][CQ:image,url=last]", created_at=datetime.now(),
+        )
+        visual_cache(monkeypatch, [record], ["last"])
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=(record,)), [visual_event(2, "这张图是谁")],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGFzdA=="]
+        assert "原消息内图片序号:2" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_latest_focal_quote_wins_over_older_quote_and_other_users_new_image(monkeypatch):
+    async def run():
+        _cache, coordination = visual_cache(monkeypatch, [], ["older-quote", "latest-quote", "new-other"])
+
+        async def resolve(_bot, event):
+            return SimpleNamespace(
+                image_refs=({"url": "latest-quote" if event.message_id == 3 else "older-quote"},),
+                sender_name="quoted-user", sender_id=99, message_id=103 if event.message_id == 3 else 101,
+            )
+
+        coordination.resolve_reply_context = resolve
+        items = [
+            (None, visual_event(1, "这张图", reply=True), False),
+            (None, visual_event(3, "这张图", reply=True), True),
+            (None, visual_event(4, user_id=77, urls=("new-other",)), False),
+        ]
+        parts = await runtime_for_groups()._decision_images(None, 10, ContextSnapshot(messages=()), items)
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGF0ZXN0LXF1b3Rl"]
+        assert "原消息ID:103" in selected_labels(parts)
+        assert "当前引用消息ID:3" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_resolved_text_quote_does_not_suppress_current_image(monkeypatch):
+    async def run():
+        _cache, coordination = visual_cache(monkeypatch, [], ["own-current"])
+
+        async def resolve(*args):
+            return SimpleNamespace(image_refs=(), text="text quote")
+
+        coordination.resolve_reply_context = resolve
+        event = visual_event(2, "看这个", urls=("own-current",), reply=True)
+        parts = await runtime_for_groups()._decision_images(
+            None, 10, ContextSnapshot(messages=()), [(None, event, True)],
+        )
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,b3duLWN1cnJlbnQ="]
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("new_topic", ["今天吃啥", "这张图是谁"])
+def test_only_explicit_visual_followup_can_reuse_an_earlier_same_user_quote(monkeypatch, new_topic):
+    async def run():
+        _cache, coordination = visual_cache(monkeypatch, [], ["previous-quote"])
+
+        async def resolve(_bot, event):
+            if event.message_id != 1:
+                return None
+            return SimpleNamespace(
+                image_refs=({"url": "previous-quote"},), sender_name="quoted", sender_id=99, message_id=20,
+            )
+
+        coordination.resolve_reply_context = resolve
+        parts = await runtime_for_groups()._decision_images(
+            None, 10, ContextSnapshot(messages=()), [
+                (None, visual_event(1, "这张图是谁", reply=True), True),
+                (None, visual_event(2, new_topic), True),
+            ],
+        )
+        assert len(selected_image_urls(parts)) == (1 if new_topic == "这张图是谁" else 0)
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("new_topic", ["今天吃啥", "这是谁"])
+def test_only_visual_followup_can_reuse_an_earlier_same_user_upload(monkeypatch, new_topic):
+    async def run():
+        visual_cache(monkeypatch, [], ["previous-upload"])
+        parts = await runtime_for_groups()._decision_images(
+            None, 10, ContextSnapshot(messages=()), [
+                (None, visual_event(1, urls=("previous-upload",)), False),
+                (None, visual_event(2, new_topic), True),
+            ],
+        )
+        assert len(selected_image_urls(parts)) == (1 if new_topic == "这是谁" else 0)
+    asyncio.run(run())
+
+
+def test_empty_reply_context_from_failed_get_msg_does_not_fall_back_to_recent_image(monkeypatch):
+    async def run():
+        record = CachedMessage(10, 1, 99, "other", "", image_url="latest", created_at=datetime.now())
+        _cache, coordination = visual_cache(monkeypatch, [record])
+
+        async def resolve(*args):
+            return SimpleNamespace(text="", image_refs=(), sender_id="99", sender_name="other", message_id=20)
+
+        coordination.resolve_reply_context = resolve
+        parts = await runtime_for_groups()._decision_images(
+            None, 10, ContextSnapshot(messages=(record,)),
+            [(None, visual_event(2, "这张图是谁", reply=True), True)],
+        )
+        assert selected_image_urls(parts) == []
+        assert "无法确认" in selected_labels(parts)
+        assert "消息ID:1" not in selected_labels(parts)
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("with_raw_url", [False, True])
+def test_latest_unstored_image_cannot_be_replaced_by_old_cached_image(monkeypatch, with_raw_url):
+    async def run():
+        now = datetime.now()
+        records = (
+            CachedMessage(10, 1, 99, "other", "", image_url="old-cached", created_at=now),
+            CachedMessage(
+                10, 2, 99, "other", "", has_image=True, image_url="",
+                raw_message="[CQ:image,url=latest-source]" if with_raw_url else "",
+                created_at=now,
+            ),
+            CachedMessage(10, 3, 42, "user", "这张图是谁", created_at=now),
+        )
+        visual_cache(monkeypatch, records, ["latest-source"] if with_raw_url else [])
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(3, "这张图是谁")],
+        )
+        assert "消息ID:2" in selected_labels(parts)
+        assert "消息ID:1" not in selected_labels(parts)
+        if with_raw_url:
+            assert selected_image_urls(parts) == ["data:image/jpeg;base64,bGF0ZXN0LXNvdXJjZQ=="]
+        else:
+            assert selected_image_urls(parts) == []
+            assert "无法确认" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_unstored_latest_current_record_is_retained_as_unavailable_subject(monkeypatch):
+    async def run():
+        records = (
+            CachedMessage(10, 1, 99, "other", "", image_url="old-cached"),
+            CachedMessage(10, 2, 42, "user", "", has_image=True),
+        )
+        visual_cache(monkeypatch, records)
+        parts = await runtime_for_groups()._context_images(
+            10, ContextSnapshot(messages=records), [visual_event(2)],
+        )
+        assert selected_image_urls(parts) == []
+        assert "消息ID:2" in selected_labels(parts)
+        assert "消息ID:1" not in selected_labels(parts)
+        assert "无法确认" in selected_labels(parts)
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("known_quote", [False, True])
+def test_failed_quote_never_switches_to_latest_group_image(monkeypatch, known_quote):
+    async def run():
+        record = CachedMessage(10, 1, 99, "other", "", image_url="latest", created_at=datetime.now())
+        _cache, coordination = visual_cache(monkeypatch, [record])
+
+        async def resolve(*args):
+            if not known_quote:
+                return None
+            return SimpleNamespace(
+                image_refs=({"url": "missing-quote"},), sender_name="quoted", sender_id=99, message_id=20,
+            )
+
+        coordination.resolve_reply_context = resolve
+        class FailedClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def get(self, url): raise OSError("fixture quote unavailable")
+
+        monkeypatch.setattr(module.httpx, "AsyncClient", FailedClient)
+        parts = await runtime_for_groups()._decision_images(
+            None, 10, ContextSnapshot(messages=(record,)),
+            [(None, visual_event(2, "这张图是谁", reply=True), True)],
+        )
+        assert selected_image_urls(parts) == []
+        assert "无法确认" in selected_labels(parts)
+        assert "消息ID:1" not in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_only_focal_user_current_image_enters_default_batch_context(monkeypatch):
+    async def run():
+        visual_cache(monkeypatch, [], ["own", "other"])
+        items = [
+            (None, visual_event(1, "看看这张", urls=("own",)), True),
+            (None, visual_event(2, user_id=99, urls=("other",)), False),
+        ]
+        parts = await runtime_for_groups()._decision_images(None, 10, ContextSnapshot(messages=()), items)
+        assert selected_image_urls(parts) == ["data:image/jpeg;base64,b3du"]
+    asyncio.run(run())
+
+
+def test_forced_reply_alone_does_not_request_avatar(monkeypatch):
+    async def run():
+        visual_cache(monkeypatch, [])
+        runtime = runtime_for_groups()
+        async def forbidden(*args, **kwargs): pytest.fail("A mention is not an avatar request")
+        runtime._context_avatars = forbidden
+        assert await runtime._decision_images(
+            None, 10, ContextSnapshot(messages=()), [(None, visual_event(1, "你好"), True)],
+        ) == []
+    asyncio.run(run())
+
+
+def test_zero_image_budget_prevents_quote_and_context_loading(monkeypatch):
+    async def run():
+        monkeypatch.setattr(module.CONSOLE, "global_value", lambda key, default: 0 if key == "decision_images" else default)
+        runtime = runtime_for_groups()
+        async def forbidden(*args, **kwargs): pytest.fail("Zero image budget must skip all chat-image loading")
+        runtime._context_images = forbidden
+        runtime._quoted_reply_images = forbidden
+        assert await runtime._decision_images(
+            None, 10, ContextSnapshot(messages=()),
+            [(None, visual_event(1, "这张图是谁", urls=("new",), reply=True), True)],
+        ) == []
+    asyncio.run(run())
+
+
+def test_cache_warming_still_warms_bounded_recent_images(monkeypatch):
+    async def run():
+        records = tuple(CachedMessage(10, index, 42, "user", "", image_url=f"image-{index}") for index in range(1, 5))
+        visual_cache(monkeypatch, records)
+        parts = await runtime_for_groups()._context_images(10, ContextSnapshot(messages=records), max_images=2)
+        assert len(selected_image_urls(parts)) == 2
+        assert "消息ID:3" in selected_labels(parts)
+        assert "消息ID:4" in selected_labels(parts)
+    asyncio.run(run())
+
+
+def test_visual_reply_cannot_use_another_users_selected_image():
+    earlier = visual_event(1, "这张图是谁", user_id=41, urls=("earlier",))
+    focal = visual_event(2, "这张图是谁", user_id=42, urls=("focal",))
+    items = [(None, earlier, True), (None, focal, True)]
+    image_parts = [{"type": "image_url", "image_url": {"url": "focal"}}]
+    assert not module._visual_reply_matches_focus(items, earlier, image_parts)
+    assert module._visual_reply_matches_focus(items, focal, image_parts)
+    assert module._visual_reply_matches_focus(items, earlier, [])
+    assert module._visual_reply_matches_focus(items,
+        visual_event(3, "Python列表怎么用", user_id=41), image_parts)
+    assert not module._visual_reply_matches_focus(items,
+        visual_event(4, "看看我的头像", user_id=41), image_parts)

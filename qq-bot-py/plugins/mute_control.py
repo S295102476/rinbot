@@ -100,7 +100,8 @@ _EXTREME_RIN_REPLIES = [
 @get_driver().on_startup  # type: ignore[attr-defined]
 async def _init_mute_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
         await conn.execute(text(
             """
             INSERT INTO user_affinity (user_id, affinity_score, last_delta, last_reason, updated_at)
@@ -157,6 +158,7 @@ async def _evaluate_risk_delta(context_text: str, user_message: str | None = Non
     prompt = (
         "你是远坂凛群聊机器人的好感度评估员。请判断【目标用户本次发言】会让凛对这个用户的好感如何变化。\n"
         "凛是傲娇：嘴硬、吐槽、害羞、说“笨蛋”“才没有”不等于好感下降；看似拒绝也可能是害羞或正常傲娇互动。\n"
+        "用户明确表示不喜欢被呛、希望温柔一点、不想被反复催睡，是合理交流边界，不因此扣分或判作骚扰。\n"
         "只输出 JSON，不要任何解释。格式：{\"delta\":0,\"reason\":\"普通闲聊\"}。\n"
         "delta 必须是 -2 到 +2 的整数，reason 用不超过30字中文说明原因。\n\n"
         "评分标准：\n"

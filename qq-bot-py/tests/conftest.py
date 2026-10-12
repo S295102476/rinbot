@@ -24,6 +24,19 @@ _config['database'].update(host='127.0.0.1', port=1, password='test-database-pas
 _config['redis'].update(host='127.0.0.1', port=1, password='test-redis-password')
 _config['meme']['minio'].update(endpoint='127.0.0.1:1', access_key='test-access-key', secret_key='test-secret-key')
 _config['agent'].update(active_groups=[987654321], provider_chain=['antigravity'])
+_config['agent']['model_routes'].update({
+    'group_chat': {'provider': 'antigravity', 'protocol': 'openai', 'model': 'test-ag-model'},
+    'memory': {'provider': 'antigravity', 'protocol': 'openai', 'model': 'test-ag-model'},
+    'emotion': {'provider': 'antigravity', 'protocol': 'openai', 'model': 'test-emotion-model'},
+    'meme': {'provider': 'antigravity', 'protocol': 'openai', 'model': 'test-meme-model'},
+    'expert': {'enabled': True, 'provider': 'openai_responses', 'protocol': 'responses', 'model': 'test-expert-model'},
+    'development': {'enabled': True, 'provider': 'openai_responses', 'protocol': 'responses', 'model': 'test-developer-model'},
+})
+_config['ai']['openai_responses'].update(enabled=True, api_url='https://gpt.example.com/v1/responses',
+    api_key='test-gpt-key', api_key_env='', model='test-gpt-model')
+_config['agent']['memory_v2'].update(enabled=True, groups=[987654321], embeddings_enabled=False)
+_config['agent']['game_tools'].update(enabled=True, groups=[987654321])
+_config['agent']['expert'].update(enabled=True, groups=[987654321])
 _config['agent']['group'].update(owner_user_id=123456789, owner_priority_groups=[987654321],
     decision_recent_messages=300, decision_direct_recent_messages=300,
     decision_context_chars=30000, decision_direct_context_chars=30000, decision_backend_search=True)

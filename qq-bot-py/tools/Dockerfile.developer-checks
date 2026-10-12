@@ -1,0 +1,13 @@
+# Build on the administrator's machine/host before enabling development checks:
+# See docs/developer-tasks.md for a minimal build context and optional mirror.
+FROM python:3.11-slim
+ARG PIP_INDEX_URL=https://pypi.org/simple
+WORKDIR /workspace
+COPY requirements.txt /tmp/requirements.txt
+RUN python -m pip install --no-cache-dir --index-url "$PIP_INDEX_URL" \
+    --timeout 30 --retries 3 --progress-bar on \
+    -r /tmp/requirements.txt pytest pytest-asyncio \
+    && mkdir -p /workspace /tmp/pycache && chmod 755 /workspace
+ENV PYTHONDONTWRITEBYTECODE=1 HOME=/tmp
+USER 65534:65534
+ENTRYPOINT []

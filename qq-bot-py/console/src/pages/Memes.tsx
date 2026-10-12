@@ -152,7 +152,12 @@ function MemeEditor({
               <MemeImage item={item} />
               <div>
                 <strong className="break-word">{item.object_name}</strong>
-                <p className="muted">发送 {number(item.send_count)} 次</p>
+                <p
+                  className="muted"
+                  title="累计记录，不是发送上限；新版仅在 QQ 接口确认成功后增加，历史记录可能包含旧版预选计数。"
+                >
+                  累计发送 {number(item.send_count)} 次
+                </p>
                 <Timestamp value={item.last_sent_at} />
               </div>
             </div>
@@ -346,7 +351,7 @@ export function Memes() {
     <>
       <PageHeading
         title="表情库"
-        subtitle={`${data ? number(data.total) : "—"} 个表情`}
+        subtitle={`${data ? number(data.total) : "—"} 个表情 · 情绪匹配、全池随机与近期去重`}
       >
         <IconButton label="刷新表情库" onClick={reload}>
           <RefreshCw size={17} />
@@ -354,6 +359,12 @@ export function Memes() {
       </PageHeading>
       <Notice>{actionError}</Notice>
       <section className="data-section meme-section">
+        <div className="section-heading">
+          <p className="muted break-word">
+            累计发送次数没有上限；优先匹配情绪，在符合条件的完整表情池中随机选图，并避开本群近期发送。
+            收集风格通过 SFTP 编辑 <code>data/meme/collection_rules.md</code>，保存后对新审核生效。
+          </p>
+        </div>
         <div className="toolbar">
           <div className="search-input">
             <Search size={16} />
@@ -470,7 +481,9 @@ export function Memes() {
                     <Badge kind="rose">
                       {emotions[item.emotion] || "未分类"}
                     </Badge>
-                    <small>{number(item.send_count)} 次发送</small>
+                    <small title="累计记录，不是发送上限；新版仅在 QQ 接口确认成功后增加，历史记录可能包含旧版预选计数。">
+                      累计发送 {number(item.send_count)} 次
+                    </small>
                   </div>
                   <div className="meme-actions">
                     <Badge

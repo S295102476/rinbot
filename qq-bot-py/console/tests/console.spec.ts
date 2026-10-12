@@ -83,10 +83,10 @@ test('group bulk editing includes versions and CSRF', async ({ page }) => {
 test('settings preserve group ID input and save only changes', async ({ page }) => {
   const writes = await mock(page); await page.goto('./#settings');
   await page.getByLabel('测试群组', { exact: true }).fill('123456, 234567');
-  await page.getByLabel('决策超时（秒）').fill('100');
+  await page.getByLabel('主动决策上下文字符数').fill('8000');
   await page.getByRole('button', { name: '保存设置' }).click();
   await expect(page.getByText('设置已保存', { exact: true })).toBeVisible();
-  expect(writes[0].body).toEqual({ version: 2, patch: { test_groups: [123456, 234567], decision_timeout_seconds: 100 } });
+  expect(writes[0].body).toEqual({ version: 2, patch: { test_groups: [123456, 234567], decision_context_chars: 8000 } });
 });
 
 test('meme hard deletion requires explicit confirmation', async ({ page }) => {

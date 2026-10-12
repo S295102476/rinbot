@@ -74,7 +74,8 @@ _FONT_TAG = _load_font(15)
 @get_driver().on_startup
 async def _create_deer_table():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
 
         # 旧表没有稳定的补签标记。先补列，再按历史的时间判定迁移一次：
         # 创建日期晚于目标日期的记录即旧版补签记录。

@@ -9,6 +9,8 @@ implementation.
 from __future__ import annotations
 
 import os
+import json
+import re
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -153,6 +155,32 @@ def build_responses_payload(
 
 
 def parse_responses_text(data: dict[str, Any]) -> str:
+    # Some compatible relays return native function calls even when their
+    # schema was conveyed in the system prompt. Normalize the wire format;
+    # execution remains exclusively in the permissioned host tool registry.
+    calls = [item for item in data.get("output") or []
+             if isinstance(item, dict) and item.get("type") == "function_call"]
+    if calls:
+        if len(calls) > 8:
+            raise ResponsesAPIError("Responses returned too many function calls")
+        normalized = []
+        for call in calls:
+            name, arguments = call.get("name"), call.get("arguments")
+            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,99}", name):
+                raise ResponsesAPIError("Responses returned an invalid function name")
+            if call.get("status") in {"in_progress", "incomplete"}:
+                raise ResponsesAPIError("Responses returned an incomplete function call")
+            if isinstance(arguments, str):
+                if len(arguments) > 100000:
+                    raise ResponsesAPIError("Responses function arguments are too large")
+                try:
+                    arguments = json.loads(arguments)
+                except ValueError:
+                    raise ResponsesAPIError("Responses function arguments are not valid JSON") from None
+            if not isinstance(arguments, dict):
+                raise ResponsesAPIError("Responses function arguments must be an object")
+            normalized.append({"name": name, "arguments": arguments})
+        return json.dumps({"action": "tool", "tool_calls": normalized}, ensure_ascii=False)
     top_level = data.get("output_text")
     if isinstance(top_level, str) and top_level.strip():
         return top_level.strip()

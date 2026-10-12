@@ -1,8 +1,8 @@
 """
 离线批量表情包情绪分类脚本
 ================================
-功能：遍历 MinIO memes 桶中的所有图片，通过 Gemini Pro（OpenClaw 代理）
-     判断每张图片的情绪标签，并将结果写入 Redis。
+功能：遍历 MinIO memes 桶中的所有图片，使用 meme 用途路由分类。
+     同步已有 MySQL 元数据与 Redis 情绪索引，保留管理员停用/删除状态。
 
 Redis 写入结构：
   meme:tags:{object_name}       -> String  情绪标签（如 "happy"）
@@ -11,19 +11,25 @@ Redis 写入结构：
 用法：
   cd qq-bot-py
   python tools/classify_memes.py              # 处理全部
-  python tools/classify_memes.py --skip-done  # 跳过已分类的
-  python tools/classify_memes.py --dry-run    # 不写 Redis，仅打印结果
+  python tools/classify_memes.py --skip-done  # 已有合法 Redis 标签只补同步，不重复调用模型
+  python tools/classify_memes.py --dry-run    # 只读预测，不写 DB、Redis、MinIO
 """
 
 import argparse
+import asyncio
 import base64
 import io
 import sys
 import time
+from datetime import datetime
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import yaml
 import httpx
 import redis as redis_lib
 from minio import Minio
+from sqlalchemy import select
+from plugins.db import MemeItem, get_session, engine
 try:
     from PIL import Image
     _HAS_PIL = True
@@ -65,6 +71,7 @@ EMOTION_DESCRIPTIONS = {
     "neutral": "泛用、无明显情绪、普通反应、难以归类",
 }
 EMOTIONS = list(EMOTION_DESCRIPTIONS)
+_ROUTE_RUNNER = asyncio.Runner()
 
 # ── 客户端初始化 ───────────────────────────────────────
 minio_client = Minio(
@@ -121,10 +128,6 @@ def _classify_image(data: bytes, ext: str, retries: int = 3) -> str | None:
     发送图片到 Gemini Pro，返回情绪标签或 "invalid"（非表情包）。
     失败返回 None。自动压缩图片、支持最多 retries 次重试（指数退避）。
     """
-    if not GEMINI_API_KEY:
-        print("[ERROR] gemini.api_key 未配置，请在 config.yaml 中填入 API Key", file=sys.stderr)
-        sys.exit(1)
-
     b64 = _image_to_base64(data, ext)
     mime = "image/jpeg" if ext == "jpg" else f"image/{ext}"
     prompt = (
@@ -136,54 +139,19 @@ def _classify_image(data: bytes, ext: str, retries: int = 3) -> str | None:
         + "\n只回复一个英文标签或 invalid，不要解释，不要标点。"
     )
 
-    payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {"inlineData": {"mimeType": mime, "data": b64}},
-                    {"text": prompt},
-                ],
-            }
-        ],
-        "generationConfig": {
-            "maxOutputTokens": 10,
-            "temperature": 0,
-            "thinkingConfig": {"thinkingBudget": 0},
-        },
-    }
-
+    from plugins.model_routes import complete
     for attempt in range(1, retries + 1):
         try:
-            with httpx.Client(timeout=90, proxy=GEMINI_PROXY) as client:
-                resp = client.post(
-                    f"{GEMINI_NATIVE_URL}/models/{CLASSIFIER_MODEL}:generateContent",
-                    params={"key": GEMINI_API_KEY},
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-                resp.raise_for_status()
-                result = resp.json()
-                parts = result.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-                text = "".join(p.get("text", "") for p in parts)
-                label = text.strip().lower()
-                label = label.split()[0].rstrip(".,!?;:")
-                if label == "invalid":
-                    return "invalid"
-                if label not in EMOTIONS:
-                    print(f"  [WARN] 模型返回未知标签 '{label}'，归为 neutral")
-                    label = "neutral"
-                return label
-        except httpx.HTTPStatusError as e:
-            wait = 2 ** attempt
-            print(f"  [WARN] HTTP {e.response.status_code} (第{attempt}次), {wait}s后重试: {e.response.text[:120]}")
+            result = _ROUTE_RUNNER.run(complete("meme", [{"role": "user", "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+            ]}], purpose="meme_classification", timeout=30))
+            label = result.strip().lower().split()[0].rstrip(".,!?;:")
+            return label if label in EMOTIONS or label == "invalid" else None
+        except Exception as exc:
+            print(f"  [WARN] classification failed attempt={attempt}: {type(exc).__name__}")
             if attempt < retries:
-                time.sleep(wait)
-        except Exception as e:
-            wait = 2 ** attempt
-            print(f"  [WARN] 请求失败 (第{attempt}次), {wait}s后重试: {e}")
-            if attempt < retries:
-                time.sleep(wait)
+                time.sleep(2 ** attempt)
     return None
 
 
@@ -199,38 +167,90 @@ def _download_from_minio(object_name: str) -> bytes | None:
         return None
 
 
+async def _sync_classification(object_name: str, label: str, *, deleted=False):
+    """Update existing metadata only; never reactivate administrative exclusions."""
+    if not deleted and label not in EMOTIONS:
+        raise ValueError("Invalid emotion label")
+    async with await get_session() as session:
+        item = (await session.execute(select(MemeItem).where(
+            MemeItem.bucket == BUCKET, MemeItem.object_name == object_name).with_for_update())).scalar_one_or_none()
+        if item is None:
+            if deleted:
+                # An untracked rejected object still needs a tombstone. If its
+                # storage deletion fails, the sync command must not reactivate it.
+                now = datetime.now()
+                session.add(MemeItem(bucket=BUCKET, object_name=object_name, status="deleted",
+                                     collected_at=now, updated_at=now, tags="[]"))
+                await session.commit()
+                return "deleted"
+            return None
+        now = datetime.now()
+        if deleted:
+            item.status = "deleted"
+        else:
+            if item.emotion != label or item.classified_at is None:
+                item.classified_at = now
+            item.emotion = label
+        item.updated_at = now
+        status = item.status
+        await session.commit()
+        return status
+
+
+async def _load_routes_readonly():
+    """Read console overrides without triggering the normal startup migration."""
+    import json
+    from plugins import model_routes
+    from plugins.console_state import ConsoleSetting
+    async with await get_session() as session:
+        rows = (await session.execute(select(ConsoleSetting).where(ConsoleSetting.key.like("route:%")))).scalars().all()
+    model_routes._OVERRIDES.clear()
+    model_routes._VERSIONS.clear()
+    for row in rows:
+        role = row.key.split(":", 1)[1]
+        if role in model_routes.DEFAULTS:
+            model_routes._OVERRIDES[role] = model_routes.validate_patch(json.loads(row.values_json))
+            model_routes._VERSIONS[role] = row.version
+
+
 def _write_to_redis(object_name: str, label: str, dry_run: bool):
-    """将情绪标签写入 Redis"""
+    """Synchronize DB first, then rebuild only this object's Redis membership."""
+    if label not in EMOTIONS:
+        raise ValueError("Invalid emotion label")
     tag_key = f"{TAG_PREFIX}{object_name}"
     emotion_key = f"{EMOTION_PREFIX}{label}"
 
     if dry_run:
-        print(f"  [DRY-RUN] 将写入: {tag_key} = {label}  |  SADD {emotion_key}")
+        print(f"  [DRY-RUN] 将同步已有数据库标签与 Redis: {tag_key} = {label}")
         return
-
-    # 如果该对象之前有旧标签，先从旧标签集合中移除
-    old_label = rds.get(tag_key)
-    if old_label and old_label != label:
-        rds.srem(f"{EMOTION_PREFIX}{old_label}", object_name)
-
-    rds.set(tag_key, label)
-    rds.sadd(emotion_key, object_name)
+    status = _ROUTE_RUNNER.run(_sync_classification(object_name, label))
+    pipe = rds.pipeline()
+    for emotion in EMOTIONS:
+        pipe.srem(f"{EMOTION_PREFIX}{emotion}", object_name)
+    pipe.srem(POOL_KEY, object_name)
+    pipe.set(tag_key, label)
+    if status == "active":
+        pipe.sadd(POOL_KEY, object_name)
+        pipe.sadd(emotion_key, object_name)
+    pipe.execute()
+    if status is None:
+        print("  [WARN] 缺少数据库元数据，标签已缓存；运行 tools/sync_memes_db.py 后加入有效池")
 
 
 def _delete_meme(object_name: str, dry_run: bool):
-    """从 MinIO + Redis 完全删除一张无效的非表情包图片"""
+    """Keep historical DB counts while marking a rejected object as deleted."""
     tag_key = f"{TAG_PREFIX}{object_name}"
 
     if dry_run:
-        print(f"  [DRY-RUN] 将删除: MinIO {object_name} + Redis 索引")
+        print(f"  [DRY-RUN] 将标记数据库 deleted 并删除: MinIO {object_name} + Redis 索引")
         return
-
-    # 清除 Redis 中所有索引
-    old_label = rds.get(tag_key)
-    if old_label:
-        rds.srem(f"{EMOTION_PREFIX}{old_label}", object_name)
-    rds.delete(tag_key)
-    rds.srem(POOL_KEY, object_name)
+    _ROUTE_RUNNER.run(_sync_classification(object_name, "", deleted=True))
+    pipe = rds.pipeline()
+    for emotion in EMOTIONS:
+        pipe.srem(f"{EMOTION_PREFIX}{emotion}", object_name)
+    pipe.delete(tag_key)
+    pipe.srem(POOL_KEY, object_name)
+    pipe.execute()
 
     # 从 MinIO 删除
     try:
@@ -242,14 +262,20 @@ def _delete_meme(object_name: str, dry_run: bool):
 # ── 主流程 ────────────────────────────────────────────
 
 def main():
+    from plugins import model_routes
     parser = argparse.ArgumentParser(description="批量分类 MinIO 表情包情绪")
-    parser.add_argument("--skip-done", action="store_true", help="跳过已有标签的表情包")
-    parser.add_argument("--dry-run", action="store_true", help="不写入 Redis，仅打印预测结果")
+    parser.add_argument("--skip-done", action="store_true", help="已有合法标签只补数据库与索引，不再调用模型")
+    parser.add_argument("--dry-run", action="store_true", help="不写入数据库、Redis 或 MinIO，仅打印预测结果")
     parser.add_argument("--delay", type=float, default=1.0, help="每次 API 调用间隔秒数（默认 1.0）")
     parser.add_argument("--purge-invalid", action="store_true", help="将 AI 判断为非表情包的图片从 MinIO+Redis 中删除")
     args = parser.parse_args()
+    try:
+        _ROUTE_RUNNER.run(_load_routes_readonly())
+    except Exception as exc:
+        print(f"[ERROR] Cannot read effective model routes: {type(exc).__name__}", file=sys.stderr)
+        return 1
 
-    print(f"[classify_memes] 模型: {CLASSIFIER_MODEL}")
+    print(f"[classify_memes] 模型: {__import__('plugins.model_routes', fromlist=['resolve']).resolve('meme').model}")
     print(f"[classify_memes] skip-done={args.skip_done}  dry-run={args.dry_run}  purge-invalid={args.purge_invalid}  delay={args.delay}s")
     print()
 
@@ -273,10 +299,15 @@ def main():
         prefix = f"[{i}/{total}]"
 
         # 跳过已分类
-        if args.skip_done and rds.exists(tag_key):
-            existing = rds.get(tag_key)
+        existing = rds.get(tag_key) if args.skip_done else None
+        if existing in EMOTIONS:
             print(f"{prefix} 跳过（已分类 {existing}）: {name}")
-            skipped += 1
+            try:
+                _write_to_redis(name, existing, dry_run=args.dry_run)
+                skipped += 1
+            except Exception as exc:
+                print(f"  [ERROR] Metadata/index sync failed: {type(exc).__name__}")
+                failed += 1
             continue
 
         print(f"{prefix} 下载: {name} ...", end=" ", flush=True)
@@ -305,7 +336,10 @@ def main():
         if label == "invalid":
             if args.purge_invalid:
                 print("非表情包，删除")
-                _delete_meme(name, dry_run=args.dry_run)
+                try:
+                    _delete_meme(name, dry_run=args.dry_run)
+                except Exception as exc:
+                    print(f"  [ERROR] Purge failed: {type(exc).__name__}")
                 failed += 1  # 统计为已处理（用 failed 字段复用表示删除数）
             else:
                 print("非表情包（跳过，使用 --purge-invalid 可自动删除）")
@@ -315,8 +349,12 @@ def main():
             continue
 
         print(label)
-        _write_to_redis(name, label, dry_run=args.dry_run)
-        done += 1
+        try:
+            _write_to_redis(name, label, dry_run=args.dry_run)
+            done += 1
+        except Exception as exc:
+            print(f"  [ERROR] Metadata/index sync failed: {type(exc).__name__}")
+            failed += 1
 
         if i < total:
             time.sleep(args.delay)
@@ -334,4 +372,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        raise SystemExit(main() or 0)
+    finally:
+        _ROUTE_RUNNER.run(engine.dispose())
+        _ROUTE_RUNNER.close()

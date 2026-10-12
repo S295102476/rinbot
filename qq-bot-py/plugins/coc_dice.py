@@ -48,7 +48,8 @@ from nonebot import get_driver
 @get_driver().on_startup
 async def _create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from .db import ensure_tables
+        await ensure_tables(conn)
 
 
 # ============ 骰子解析 ============

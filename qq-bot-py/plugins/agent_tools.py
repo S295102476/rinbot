@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
+from pydantic import BaseModel, ConfigDict, Field
+
 import yaml
 from nonebot.log import logger
 
@@ -35,6 +37,8 @@ class ToolSpec:
     requires_approval: bool
     handler: ToolHandler
     parameters: dict[str, Any] | None = None
+    argument_model: type[BaseModel] | None = None
+    timeout: float = 45.0
 
     def schema(self) -> dict[str, Any]:
         schema = {
@@ -42,7 +46,9 @@ class ToolSpec:
             "description": self.description,
             "requires_approval": self.requires_approval,
         }
-        if self.parameters:
+        if self.argument_model:
+            schema["parameters"] = self.argument_model.model_json_schema()
+        elif self.parameters:
             schema["parameters"] = self.parameters
         return schema
 
@@ -448,59 +454,13 @@ async def _propose_patch(args: dict[str, Any], ctx: dict[str, Any]) -> dict[str,
 
 
 async def approve_patch(token: str, user_id: int) -> str:
-    record = await APPROVALS.pop(token, user_id=user_id)
-    if not record:
-        return "审批不存在、已过期、已被使用，或当前账号不是该审批的发起人。"
-    patch = str(record.get("patch") or "")
-    try:
-        _patch_paths(patch)
-        checked = await asyncio.to_thread(
-            subprocess.run,
-            ["git", "apply", "--check", "-"],
-            cwd=str(_WORKSPACE),
-            input=patch,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        if checked.returncode != 0:
-            return f"补丁检查失败：{(checked.stderr or checked.stdout).strip()[:1000]}"
-        applied = await asyncio.to_thread(
-            subprocess.run,
-            ["git", "apply", "-"],
-            cwd=str(_WORKSPACE),
-            input=patch,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        if applied.returncode != 0:
-            return f"补丁应用失败：{(applied.stderr or applied.stdout).strip()[:1000]}"
-        check_names = _validated_check_names(record.get("checks"))
-        check_results: list[dict[str, Any]] = []
-        for check in check_names:
-            check_results.append(await _run_project_check({"check": check}, {}))
-        if not check_results:
-            return "补丁已应用，未配置自动检查。"
-        lines = ["补丁已应用。自动检查结果："]
-        for result in check_results:
-            status = "通过" if result.get("ok") else "失败"
-            output = str(result.get("output") or "").strip()
-            lines.append(f"- {result.get('check')}: {status}")
-            if not result.get("ok") and output:
-                lines.append(output[-1200:])
-        return "\n".join(lines)
-    except Exception as exc:
-        return f"补丁应用失败：{type(exc).__name__}: {exc}"
+    from .developer_tasks import approve_developer_task
+    return await approve_developer_task(token, user_id)
 
 
 async def reject_patch(token: str, user_id: int) -> str:
-    record = await APPROVALS.pop(token, user_id=user_id)
-    if not record:
-        return "审批不存在、已过期、已被使用，或当前账号不是该审批的发起人。"
-    return "已拒绝该补丁，项目文件没有被修改。"
+    from .developer_tasks import reject_developer_task
+    return await reject_developer_task(token, user_id)
 
 
 async def _search_web(args: dict[str, Any], _ctx: dict[str, Any]) -> str:
@@ -927,7 +887,8 @@ async def _mute_user(args: dict[str, Any], ctx: dict[str, Any]) -> dict[str, Any
 
 TOOLS: dict[str, ToolSpec] = {
     "search_web": ToolSpec(
-        "search_web", "联网搜索并返回简洁结果", frozenset({"group", "dev"}), False, _search_web
+        "search_web", "联网搜索并返回简洁结果", frozenset({"group", "dev"}), False, _search_web,
+        {"type": "object", "properties": {"query": {"type": "string", "maxLength": 4000}}, "required": ["query"]}
     ),
     "get_affinity": ToolSpec(
         "get_affinity",
@@ -1100,7 +1061,86 @@ TOOLS: dict[str, ToolSpec] = {
 }
 
 
-_TOOL_FEATURES = {"search_web": "web_search", "send_setu": "pixiv", "sign_in": "sign_in"}
+def _isolated_developer_handler(name):
+    async def handle(args, ctx):
+        from .developer_tasks import execute_developer_tool
+        return await execute_developer_tool(name, args, ctx)
+    return handle
+
+
+# Existing helper functions are retained for compatibility, but no registered
+# tool can access the production workspace outside an isolated developer task.
+from dataclasses import replace as _replace_tool
+for _dev_tool_name in ("list_project_files", "read_project_file", "search_project", "git_status", "run_project_check", "propose_patch"):
+    TOOLS[_dev_tool_name] = _replace_tool(TOOLS[_dev_tool_name], handler=_isolated_developer_handler(_dev_tool_name))
+
+
+from .agent_game_tools import (ARGUMENT_MODELS as GAME_ARGUMENT_MODELS,
+                               start as _game_start, action as _game_action, show as _game_show)
+from .agent_expert import ExpertArguments, ask_expert as _ask_expert
+
+
+class MemberReportArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    source_message_id: int = Field(gt=0)
+    target_user_id: int | None = Field(default=None, gt=0)
+
+
+async def _member_report(args, ctx):
+    from .agent_game_tools import source_event
+    from .agent_memory_report import report_tool
+    bot, event = source_event(args, ctx)
+    text = event.get_plaintext()
+    if re.search(r"(?:不要|别|不许|关闭|停止|禁止).{0,8}(?:评价|评估|报告)", text) or not re.search(r"评价(?:一下)?(?:我|\s*$)|给我.{0,5}评价|评价报告|评估|观察报告|印象", text):
+        raise ValueError("评价工具需要当前消息明确请求评价自己或真实 @ 的群友")
+    child = dict(ctx, event=event, user_id=int(event.user_id), bot=bot)
+    return await report_tool({"target_user_id": args["target_user_id"]} if args.get("target_user_id") else {}, child)
+
+TOOLS.update({
+    "minigame_start": ToolSpec("minigame_start", "响应当前消息明确开局请求；支持五子棋、井字棋、象棋、围棋、成语填空、猜数字。邀请仅取真实@；已有对局展示当前状态。", frozenset({"group"}), False, _game_start,
+                              argument_model=GAME_ARGUMENT_MODELS["minigame_start"], timeout=60),
+    "minigame_action": ToolSpec("minigame_action", "执行当前真实消息要求的游戏操作；棋步、答案、胜负由游戏服务判断，不能代群友行动。", frozenset({"group"}), False, _game_action,
+                               argument_model=GAME_ARGUMENT_MODELS["minigame_action"], timeout=45),
+    "minigame_show": ToolSpec("minigame_show", "展示当前棋盘或题目；游戏工具会发送卡片，成功后立即结束回复。", frozenset({"group"}), False, _game_show,
+                             argument_model=GAME_ARGUMENT_MODELS["minigame_show"], timeout=45),
+    "ask_expert": ToolSpec("ask_expert", "用户点名 GPT 或复杂任务可委派一次独立 GPT 专家；只提交当前问题，不能开发或修改文件，最后仍由你按当前人格回答。", frozenset({"group"}), False, _ask_expert,
+                           argument_model=ExpertArguments, timeout=180),
+    "member_report": ToolSpec("member_report", "应当前消息请求生成本群评价卡；仅评价自己或真实 @ 的目标，证据不足不编造；成功发送卡片后结束回复。", frozenset({"group"}), False, _member_report,
+                             argument_model=MemberReportArguments, timeout=90),
+})
+
+
+def _validate_schema(value: Any, schema: dict, path: str = "arguments") -> None:
+    """Validate legacy advertised JSON schema without coercing user identities."""
+    kind = schema.get("type")
+    types = {"object": dict, "array": list, "string": str, "boolean": bool, "integer": int, "number": (int, float)}
+    if kind in types and (not isinstance(value, types[kind]) or kind in {"integer", "number"} and isinstance(value, bool)):
+        raise ValueError(f"{path}: expected {kind}")
+    if "enum" in schema and value not in schema["enum"]:
+        raise PermissionError(f"{path}: invalid choice")
+    if kind == "object":
+        for key in schema.get("required", []):
+            if key not in value:
+                raise ValueError(f"{path}.{key}: required")
+        for key, item in value.items():
+            if key in schema.get("properties", {}):
+                _validate_schema(item, schema["properties"][key], f"{path}.{key}")
+    if kind == "array":
+        if len(value) > schema.get("maxItems", 1000):
+            raise ValueError(f"{path}: too many items")
+        for item in value:
+            _validate_schema(item, schema.get("items", {}), path + "[]")
+    if kind == "string" and len(value) > schema.get("maxLength", 100000):
+        raise ValueError(f"{path}: too long")
+    # Existing handlers deliberately clamp numeric limits (for example mute
+    # seconds). Keep that behavior; newly introduced tools use strict models.
+
+
+_TOOL_FEATURES = {
+    "search_web": "web_search", "send_setu": "pixiv", "sign_in": "sign_in",
+    "minigame_start": "minigames", "minigame_action": "minigames",
+    "minigame_show": "minigames",
+}
 
 
 def _tool_enabled(name, scope):
@@ -1124,17 +1164,31 @@ async def execute_tool(name: str, args: dict[str, Any], scope: str, ctx: dict[st
         raise PermissionError(f"工具不可用：{name}")
     if spec.requires_approval and not ctx.get("is_admin"):
         raise PermissionError("该工具需要管理员权限")
+    if not isinstance(args, dict):
+        raise ValueError("tool arguments must be an object")
+    if spec.argument_model:
+        args = spec.argument_model.model_validate(args).model_dump()
+    elif spec.parameters:
+        _validate_schema(args, spec.parameters)
     group_id = int(ctx.get("group_id") or 0)
     source_event = next((event for event in ctx.get("batch_events", [])
                          if str(getattr(event, "message_id", "")) == str(args.get("source_message_id", ""))), ctx.get("event"))
     user_id = int(getattr(source_event, "user_id", ctx.get("user_id") or 0))
     direct_at = bool(ctx.get("bot") and source_event and console.real_at(ctx["bot"], source_event))
+    if name.startswith("minigame_") and source_event is not None and ctx.get("bot"):
+        from .minigame_gate import is_natural_request
+        direct_at = direct_at or is_natural_request(int(ctx["bot"].self_id), source_event)
     if scope == "group":
         await console.check_agent_action(group_id, direct_at=direct_at)
+    timeout = spec.timeout
+    if scope == "dev":
+        timeout = 310.0 if name == "run_project_check" else 60.0
+    if ctx.get("deadline") is not None:
+        timeout = min(timeout, max(0.01, float(ctx["deadline"]) - asyncio.get_running_loop().time()))
     try:
-        with console.sending(group_id, user_id, source="tool", explicit=True) as state, request_context(f"tool_{name}", group_id, 120):
+        with console.sending(group_id, user_id, source="tool", explicit=True) as state, request_context(f"tool_{name}", group_id, timeout):
             state["direct_at"] = direct_at
-            result = await asyncio.wait_for(spec.handler(args, ctx), timeout=120)
+            result = await asyncio.wait_for(spec.handler(args, ctx), timeout=timeout)
         if scope == "group":
             console.record("tool", group_id, user_id, tool_name=name, status="success",
                            source_message_id=int(getattr(source_event, "message_id", 0)))
